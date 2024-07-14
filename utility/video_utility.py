@@ -9,6 +9,7 @@ import math
 import numpy
 import random
 import torch
+import pandas as pd
 
 def vidSamplingCommonCrop(height, width, out_height, out_width, scale, x_offset, y_offset):
     """
@@ -50,39 +51,13 @@ def getVideoInfo(video_path):
     """
     # Following advice from https://kkroening.github.io/ffmpeg-python/index.html
     # First find the size, then set up a stream.
-    probe = ffmpeg.probe(video_path)['streams'][0]
-    width = probe['width']
-    height = probe['height']
+    cap = cv2.VideoCapture(video_path)
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    counts = pd.read_csv("counts.csv")
+    total_frames = counts[counts['filename'] == video_path.split('/')[-1]]['count']["framecount"]
+    cap.release()
 
-    if 'duration' in probe:
-        numer, denom = probe['avg_frame_rate'].split('/')
-        frame_rate = float(numer) / float(denom)
-        duration = float(probe['duration'])
-        total_frames = math.floor(duration * frame_rate)
-    else:
-        # If the duration is not in the probe then we will need to read through the entire video
-        # to get the number of frames.
-        # It is possible that the "quiet" option to the python ffmpeg library may have a buffer
-        # size problem as the output does not go to /dev/null to be discarded. The workaround
-        # would be to manually poll the buffer.
-        process1 = (
-            ffmpeg
-            .input(video_path)
-            .output('pipe:', format='rawvideo', pix_fmt='gray')
-            #.output('pipe:', format='rawvideo', pix_fmt='yuv420p')
-            .run_async(pipe_stdout=True, quiet=True)
-        )
-        # Count frames
-        frame = 0
-        while True:
-            # Using pix_fmt='gray' we should get a single channel of 8 bits per pixel
-            in_bytes = process1.stdout.read(width * height)
-            if in_bytes:
-                frame += 1
-            else:
-                process1.wait()
-                break
-        total_frames = frame
     return width, height, total_frames
 
 
