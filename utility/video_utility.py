@@ -283,6 +283,7 @@ class VideoSampler:
                 if 1 == self.frames_per_sample:
                     yield partial_sample[0], self.path, sample_frames
                 else:
+                    
                     yield torch.cat(partial_sample), self.path, sample_frames
             print(f"Collected {target_idx + 1} frames.")
             print(f"The final frame was {frame}")
