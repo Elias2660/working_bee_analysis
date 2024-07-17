@@ -7,6 +7,7 @@ Utility functions and classes for video processing
 import ffmpeg
 import math
 import numpy
+import cv2
 import random
 import torch
 import pandas as pd
