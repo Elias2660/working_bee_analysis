@@ -23,7 +23,6 @@ import torch
 import webdataset as wds
 # Helper function to convert to images
 from torchvision import transforms
-
 from utility.video_utility import (getVideoInfo, VideoSampler, vidSamplingCommonCrop)
 
 
