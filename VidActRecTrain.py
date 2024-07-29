@@ -33,12 +33,15 @@ from utility.dataset_utility import (getImageSize, getLabelSize)
 from utility.eval_utility import (ConfusionMatrix, WorstExamples)
 from utility.model_utility import (restoreModelAndState)
 from utility.train_utility import (updateWithScaler, updateWithoutScaler)
+from utility.saliency_utils import plot_saliency_map, plot_gradcams_for_layers
+
 
 from models.alexnet import AlexLikeNet
 from models.bennet import BenNet
 from models.resnet import (ResNet18, ResNet34)
 from models.resnext import (ResNext18, ResNext34, ResNext50)
 from models.convnext import (ConvNextExtraTiny, ConvNextTiny, ConvNextSmall, ConvNextBase)
+
 
 
 
@@ -400,6 +403,9 @@ if not args.no_train:
             else:
                 out, loss = updateWithoutScaler(loss_fn, net, net_input, labels, optimizer)
 
+           # plot_gradcam(net, net_input[0].unsqueeze(0), target_class=labels[0].item(), batch_num=batch_num)
+
+
             # Fill in the confusion matrix and worst examples.
             with torch.no_grad():
                 # The postprocessesing should include Softmax or similar if that is required for
@@ -424,6 +430,51 @@ if not args.no_train:
                     for i in range(labels.size(0)):
                         label = torch.argwhere(labels[i])[0].item()
                         worst_training.test(label, out[i][label].item(), input_images[i], metadata[i])
+
+
+
+        layers_a = [
+            'model_a.0.0',  # Conv2d
+            'model_a.1.0',  # Conv2d
+            'model_a.2.0',  # Conv2d
+            'model_a.3.0',  # Conv2d
+            'model_a.4.0',  # Conv2d
+        ]
+
+        # Define the layers for model_b
+        layers_b = [
+            'model_b.0.0',  # Conv2d
+            'model_b.1.0',  # Conv2d
+            'model_b.2.0',  # Conv2d
+            'model_b.3.0',  # Conv2d
+            'model_b.4.0',  # Conv2d
+        ] 
+
+        
+        net.eval()
+        for epoch in range(args.epochs):
+            last_batch = None
+            for batch_num, dl_tuple in enumerate(dataloader):
+                last_batch = dl_tuple  # Keep track of the last batch
+
+            if last_batch is not None:
+                dl_tuple = last_batch
+                if 1 == in_frames:
+                    net_input = dl_tuple[0].unsqueeze(1).cuda()
+                else:
+                    raw_input = []
+                    for i in range(in_frames):
+                        raw_input.append(dl_tuple[i].unsqueeze(1).cuda())
+                    net_input = torch.cat(raw_input, dim=1)
+
+                # Generate Grad-CAM for each layer in model_a and model_b
+                plot_gradcams_for_layers(net, net_input[0].unsqueeze(0), layers_a, epoch=epoch, batch_num=batch_num, model_name='model_a')
+                plot_gradcams_for_layers(net, net_input[0].unsqueeze(0), layers_b, epoch=epoch, batch_num=batch_num, model_name='model_b')
+
+        net.train()
+
+
+
         print(f"Finished epoch {epoch}, last loss was {loss}")
         print(f"Training confusion matrix:")
         print(totals)

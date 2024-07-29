@@ -307,6 +307,7 @@ class VideoAnnotator:
                 .run_async(pipe_stdout=True, quiet=True)
             )
             in_bytes = process1.stdout.read(in_width * in_height * self.channels)
+            print(f"Process1; Type: {type(process1)} Contents: {process1}")
             if in_bytes:
                 # Convert to numpy and feed to the background subtraction algorithm
                 np_frame = numpy.frombuffer(in_bytes, numpy.uint8)
