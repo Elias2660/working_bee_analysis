@@ -242,9 +242,9 @@ python_log = os.system("which python3")
 machine_log = os.system("uname -a")
 date_log = os.system("date")
 
-logging.info("Log: Program_args: ", end="")
+logging.info("Log: Program_args: ")
 for theArg in sys.argv:
-    logging.info(theArg + " ", end="")
+    logging.info(theArg + " ")
 logging.info(" ")
 
 logging.info("Log: Started: ", date_log)
