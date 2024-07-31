@@ -28,6 +28,7 @@ import random
 import sys
 import logging
 
+format = "%(asctime)s: %(message)s"
 logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
 
 parser = argparse.ArgumentParser(description="Create k-fold validation sets.")
