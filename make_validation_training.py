@@ -28,6 +28,8 @@ import random
 import sys
 import logging
 
+logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
+
 parser = argparse.ArgumentParser(description="Create k-fold validation sets.")
 
 parser.add_argument(
@@ -164,10 +166,6 @@ crop_x_offset = args.crop_x_offset
 crop_y_offset = args.crop_y_offset
 label_offset = args.label_offset
 training_only = args.training_only
-
-# get the list of files from the dataset
-logging.basicConfig(level=logging.INFO)
-logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
 
 
 logging.info(f"datset is {datacsvname}")
