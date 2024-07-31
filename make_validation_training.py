@@ -37,9 +37,9 @@ import logging
 parser = argparse.ArgumentParser(description="Create k-fold validation sets.")
 
 parser.add_argument(
-    "--datacsv", type=str, required=True, default="dataset", help="name of the dataset."
+    "--datacsv", type=str, required=True, default="dataset.csv", help="name of the dataset."
 )
-parser.add_argument("--k", type=int, required=False, default=10, help="number of sets.")
+parser.add_argument("--k", type=int, required=False, default=3, help="number of sets.")
 parser.add_argument(
     "--batchdir",
     type=str,
@@ -106,7 +106,7 @@ parser.add_argument(
 parser.add_argument(
     "--label_offset",
     required=False,
-    default=1,
+    default=0,
     type=int,
     help='The starting value of classes when training with cls labels (the labels value is "cls").',
 )
