@@ -28,108 +28,108 @@ import random
 import sys
 import logging
 
-
-# Get the program dir to use the current versions of the data preparation and training scripts
-# The data preparation python program
-
-#  !! FIX THIS PROBLEM, os.getcwd should be helpful
-
 parser = argparse.ArgumentParser(description="Create k-fold validation sets.")
 
 parser.add_argument(
-    "--datacsv", type=str, required=True, default="dataset.csv", help="name of the dataset."
+    "--datacsv",
+    type=str,
+    required=False,
+    default="dataset.csv",
+    help="name of the dataset, default dataset.csv",
 )
-parser.add_argument("--k", type=int, required=False, default=3, help="number of sets.")
+parser.add_argument(
+    "--k", type=int, required=False, default=3, help="number of sets, default 3"
+)
 parser.add_argument(
     "--batchdir",
     type=str,
     required=False,
     default=".",
-    help="working directory for the sbatch run jobs",
+    help="working directory for the sbatch run jobs, default: .",
 )
 parser.add_argument(
     "--seed",
     type=int,
     required=False,
     default="01011970",
-    help="Seed to use for randominizing the data sets.",
+    help="Seed to use for randominizing the data sets, default: 01011970",
 )
 parser.add_argument(
     "--training",
     type=str,
     required=False,
     default="training-run",
-    help="Name for the training script file.",
+    help="Name for the training script file, default: training-run",
 )
 parser.add_argument(
     "--model",
     type=str,
     required=False,
     default="alexnet",
-    help="Model to use for the training script.",
+    help="Model to use for the training script, default: alexnet",
 )
 parser.add_argument(
     "--only_split",
     required=False,
     default=False,
     action="store_true",
-    help="Set to finish after splitting the csv.",
+    help="Set to finish after splitting the csv, default: False",
 )
 parser.add_argument(
     "--width",
     type=int,
     required=False,
     default=400,
-    help="Width of output images (obtained via cropping, after applying scale).",
+    help="Width of output images (obtained via cropping, after applying scale), default 400",
 )
 parser.add_argument(
     "--height",
     type=int,
     required=False,
     default=400,
-    help="Height of output images (obtained via cropping, after applying scale).",
+    help="Height of output images (obtained via cropping, after applying scale), default 400",
 )
 parser.add_argument(
     "--crop_x_offset",
     type=int,
     required=False,
     default=0,
-    help="The offset (in pixels) of the crop location on the original image in the x dimension.",
+    help="The offset (in pixels) of the crop location on the original image in the x dimension, default 0",
 )
 parser.add_argument(
     "--crop_y_offset",
     type=int,
     required=False,
     default=0,
-    help="The offset (in pixels) of the crop location on the original image in the y dimension.",
+    help="The offset (in pixels) of the crop location on the original image in the y dimension, default 0",
 )
 parser.add_argument(
     "--label_offset",
     required=False,
     default=0,
     type=int,
-    help='The starting value of classes when training with cls labels (the labels value is "cls").',
+    help='The starting value of classes when training with cls labels (the labels value is "cls"), default: 0',
 )
 parser.add_argument(
     "--training_only",
     type=bool,
     required=False,
     default=False,
-    help="only generate the training set files.",
+    help="only generate the training set files, default: False",
 )
 parser.add_argument(
     "--path_to_file",
     type=str,
     required=False,
     default="bee_analysis",
-    help="path to bee analysis files",
+    help="path to bee analysis files, default: bee_analysis",
 )
 parser.add_argument(
     "--frames_per_sample",
     type=int,
     required=False,
     default=1,
-    help="Number of frames per sample.",
+    help="Number of frames per sample, default 1",
 )
 
 args = parser.parse_args()
@@ -166,7 +166,11 @@ label_offset = args.label_offset
 training_only = args.training_only
 
 # get the list of files from the dataset
-print("datset is %s" % (datacsvname))
+logging.basicConfig(level=logging.INFO)
+logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
+
+
+logging.info(f"datset is {datacsvname}")
 
 # set the random number generator
 random.seed(seed)
@@ -176,7 +180,7 @@ with open(datacsvname) as datacsv:
     header = next(conf_reader)
     # Remove all spaces from the header strings
     header = ["".join(col.split(" ")) for col in header]
-    print("header is %s" % (header))
+    logging.info(f"header is {header}")
     file_col = header.index("filename")
     class_col = header.index("class")
     beginf_col = header.index("beginframe")
@@ -198,9 +202,8 @@ numFilesPerSet = int(numRows / numOfSets)
 extraFiles = numRows % numOfSets
 
 # create test_N and train_N files for each of the k folds
-print(
-    "Splitting %d rows into %d/set with %d extra"
-    % (numRows, numFilesPerSet, extraFiles)
+logging.info(
+    f"Splitting {numRows} rows into {numFilesPerSet}/set with {extraFiles} extra"
 )
 
 # foreach dataset, construct a csv of the files in that set
@@ -290,6 +293,6 @@ training_batch_file.write(
 )  # add end timestamp to training file
 training_batch_file.close()
 
-print("Done writing dataset and job files")
+logging.info("Done writing dataset and job files")
 # change the permissions of the shell scripts to be executable.
-os.system("chmod 755 *.sh")
+os.system("chmod 777 *.sh")
