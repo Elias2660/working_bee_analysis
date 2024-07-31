@@ -295,4 +295,4 @@ training_batch_file.close()
 
 logging.info("Done writing dataset and job files")
 # change the permissions of the shell scripts to be executable.
-os.system("chmod 777 *.sh")
+os.system("chmod 777 *")
