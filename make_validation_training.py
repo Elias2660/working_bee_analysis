@@ -117,7 +117,7 @@ parser.add_argument(
     default=False,
     help="only generate the training set files.",
 )
-parser.add_arguement(
+parser.add_argument(
     "--path_to_file",
     type=str,
     required=False,
