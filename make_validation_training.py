@@ -134,6 +134,14 @@ parser.add_argument(
     default=1,
     help="Number of frames per sample, default 1",
 )
+parser.add_argument(
+    "--epochs",
+    type=int,
+    required=False,
+    default=10,
+    help="Number of epochs to run, default 10",
+)
+
 
 args = parser.parse_args()
 
@@ -143,11 +151,9 @@ dataPrepProgram = os.path.join(program_dir, "VidActRecDataprep.py")
 # The training python program
 trainProgram = os.path.join(program_dir, "VidActRecTrain.py")  # ! FIX THIS TOO
 
-# command to run the data prep program
-dataPrepCommand = "python3 $DATAPREPPROGRAM --width $WIDTH --height $HEIGHT --crop_x_offset $X_OFFSET --crop_y_offset $Y_OFFSET --resize-strategy crop --samples 500 --crop_noise 0 --out_channels 1 --frames_per_sample 1 $DATASETNAME.csv $DATASETNAME.tar"
 # command to run the evaluation and training program
 # trainCommand    = 'srun -G 1 python3 $TRAINPROGRAM --not_deterministic --epochs 10 --modeltype $MODEL --evaluate' # <eval-set> <a-set> <b-set> ...
-trainCommand = f"python3 $TRAINPROGRAM --sample_frames {args.frames_per_sample} --not_deterministic --epochs 10 --modeltype $MODEL --label_offset $LABEL_OFFSET --evaluate"  # <eval-set> <a-set> <b-set> ...
+trainCommand = f"python3 $TRAINPROGRAM --sample_frames {args.frames_per_sample} --not_deterministic --epochs {args.epochs} --modeltype $MODEL --label_offset $LABEL_OFFSET --evaluate"  # <eval-set> <a-set> <b-set> ...
 
 # python verion to run the data prep program
 python3PathData = "/koko/system/anaconda/envs/python38/bin"
