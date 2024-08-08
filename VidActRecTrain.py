@@ -46,9 +46,6 @@ from models.convnext import ConvNextExtraTiny, ConvNextTiny, ConvNextSmall, Conv
 # logging
 import logging
 
-format = "%(asctime)s: %(message)s"
-logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
-
 
 # Argument parser setup for the program.
 parser = argparse.ArgumentParser(
@@ -212,8 +209,23 @@ parser.add_argument(
     type=str,
     help="Loss function to use during training.",
 )
+parser.add_argument(
+    "--debug",
+    required=False,
+    store_action=True,
+    default=False,
+)
 
 args = parser.parse_args()
+
+
+format = "%(asctime)s: %(message)s"
+logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
+
+if args.debug:
+    logging.getLogger().setLevel(logging.DEBUG)
+    logging.debug("Debugging enabled.")
+
 
 logging.info(
     f"""
@@ -233,6 +245,7 @@ logging.info(
     save_worst_n: {args.save_worst_n}
     not_deterministic: {args.not_deterministic}
     labels: {args.labels}
+    debug: {args.debug}
      """
 )
 
@@ -242,14 +255,17 @@ python_log = os.system("which python3")
 machine_log = os.system("uname -a")
 date_log = os.system("date")
 
-logging.info("Log: Program_args: ")
+log_statement = ""  # to join together all the logging statements
+log_statement += "Log: Program_args: \n"
 for theArg in sys.argv:
-    logging.info(theArg + " ")
-logging.info(" ")
+    log_statement += str(theArg) + " "
 
-logging.info("Log: Started: ", date_log)
-logging.info("Log: Machine: ", machine_log)
-logging.info("Log: Python_version: ", python_log)
+
+log_statement += "Log: Started: " + str(date_log) + "\n"
+log_statement += "Log: Machine: " + str(machine_log) + "\n"
+log_statement += "Log: Python_version: " + str(python_log) + "\n"
+
+logging.info(log_statement)
 
 torch.use_deterministic_algorithms(not args.not_deterministic)
 torch.manual_seed(args.seed)
@@ -273,6 +289,10 @@ if args.template is not None:
             args.loss_fun = "BCEWithLogitsLoss"
 
 logging.info(f"Reaches line 275, past finding the labels and templates")
+
+
+# setting the devcie to cuda if available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Convert the numeric input to a bool
 convert_idx_to_classes = args.convert_idx_to_classes == 1
@@ -336,7 +356,9 @@ dl_tuple = LoopTuple(*([None] * len(decode_strs)))
 # TODO FIXME Deterministic shuffle only shuffles within a range. Should perhaps manipulate what is
 # in the tar file by shuffling filenames after the dataset is created.
 
-logging.info(f"Loading dataset from {args.dataset}, finished with all other preprocessing")
+logging.info(
+    f"Loading dataset from {args.dataset}, finished with all other preprocessing"
+)
 
 dataset = (
     wds.WebDataset(args.dataset, shardshuffle=True)
@@ -502,9 +524,9 @@ if not args.no_train:
             f"Saving {args.save_worst_n} highest error training images to {worst_training.worstn_path}."
         )
     for epoch in range(args.epochs):
-        
+
         logging.info(f"Starting epoch {epoch}")
-        
+
         # Make a confusion matrix
         totals = ConfusionMatrix(size=label_size)
         logging.info(f"Starting epoch {epoch}")
@@ -512,10 +534,10 @@ if not args.no_train:
             dateNow = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
             if (batch_num % 1000) == 1:
                 logging.info("Log: at tuple %d at %s" % (batch_num, dateNow))
-                
-            logging.info(f"Starting batch {batch_num}")
+
+            logging.debug(f"Starting batch {batch_num}")
             optimizer.zero_grad()
-            logging.info(f"Zeroed gradients")
+            logging.debug(f"Zeroed gradients")
             # For debugging purposes
             # img = transforms.ToPILImage()(dl_tuple[0][0]).convert('RGB')
             # img.save(f"batch_{batch_num}.png")
@@ -546,13 +568,12 @@ if not args.no_train:
                 out, loss = updateWithoutScaler(
                     loss_fn, net, net_input, labels, optimizer
                 )
-                
-                
+
             # plot_gradcam(net, net_input[0].unsqueeze(0), target_class=labels[0].item(), batch_num=batch_num)
 
             # Fill in the confusion matrix and worst examples.
             with torch.no_grad():
-                logging.info(f"Starting to fill in confusion matrix")
+                logging.debug(f"Starting to fill in confusion matrix")
                 # The postprocessesing should include Softmax or similar if that is required for
                 # the network. Outputs of most classification networks are considered
                 # probabilities (but only take that in a very loose sense of the word) so
@@ -597,7 +618,9 @@ if not args.no_train:
 
         net.eval()
         for epoch in range(args.epochs):
-            logging.info(f"Logging the data (including for gradcam footage) for epoch {epoch}, around line 600")
+            logging.info(
+                f"Logging the data (including for gradcam footage) for epoch {epoch}, around line 600"
+            )
             last_batch = None
             for batch_num, dl_tuple in enumerate(dataloader):
                 last_batch = dl_tuple  # Keep track of the last batch
@@ -629,7 +652,9 @@ if not args.no_train:
                     batch_num=batch_num,
                     model_name="model_b",
                 )
-                logging.info(f"Finished logging the data and plotting gradcam footage for epoch {epoch}, around line 630")
+                logging.info(
+                    f"Finished logging the data and plotting gradcam footage for epoch {epoch}, around line 630"
+                )
         logging.info(f"Starting to train the model for epoch {epoch}, around line 630")
         net.train()
 
@@ -637,7 +662,7 @@ if not args.no_train:
         logging.info(f"Training confusion matrix:")
         logging.info(totals)
         logging.info(f"Accuracy: {totals.accuracy()}")
-        
+
         logging.info("Printing out class statistics")
         for cidx in range(label_size):
             # Print out class statistics if this class was present in the data.
@@ -696,7 +721,9 @@ if not args.no_train:
                     # Print out class statistics if this class was present in the data.
                     if 0 < sum(totals[cidx]):
                         precision, recall = totals.calculateRecallPrecision(cidx)
-                        logging.info(f"Class {cidx} precision={precision}, recall={recall}")
+                        logging.info(
+                            f"Class {cidx} precision={precision}, recall={recall}"
+                        )
             net.train()
         # Adjust learning rate according to the learning rate schedule
         if lr_scheduler is not None:
