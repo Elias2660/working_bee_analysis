@@ -507,7 +507,7 @@ if args.resume_from is not None:
 
 # Gradient scaler for mixed precision training
 if use_amp:
-    scaler = torch.GradScaler()
+    scaler = torch.amp.GradScaler()
 
 # TODO(bfirner) Read class names from something
 class_names = []
