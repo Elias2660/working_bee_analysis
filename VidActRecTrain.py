@@ -395,7 +395,7 @@ if "alexnet" == args.modeltype:
     optimizer = torch.optim.SGD(net.parameters(), lr=10e-4)
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
         optimizer, milestones=[3, 5, 7], gamma=0.2
-    ).to(device=device)
+    )
     use_amp = True
 elif "resnet18" == args.modeltype:
     net = ResNet18(
