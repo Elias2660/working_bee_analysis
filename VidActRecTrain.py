@@ -563,7 +563,7 @@ try:
                         v, m = torch.var_mean(net_input)
                         net_input = (net_input - m) / v
 
-                    labels = [item.to(device=device) for item in dl_tuple[label_index]]
+                    labels = dl_tuple[label_index]
 
                     # The label value may need to be adjust, for example if the label class is 1 based, but
                     # should be 0-based for the one_hot function.
