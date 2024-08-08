@@ -158,7 +158,7 @@ trainCommand = f"python3 $TRAINPROGRAM --sample_frames {args.frames_per_sample} 
 # python verion to run the data prep program
 python3PathData = "/koko/system/anaconda/envs/python38/bin"
 # python version to run the training program
-python3PathTrain = "/koko/system/anaconda/envs/python39/bin"
+python3PathTrain = "/koko/system/anaconda/envs/python38/bin" # changed from 39 to 38 for dependency reasons...
 
 
 datacsvname = args.datacsv

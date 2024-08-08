@@ -507,7 +507,7 @@ if args.resume_from is not None:
 
 # Gradient scaler for mixed precision training
 if use_amp:
-    scaler = torch.cuda.amp.GradScaler()
+    scaler = torch.amp.GradScaler()
 
 # TODO(bfirner) Read class names from something
 class_names = []
@@ -741,7 +741,7 @@ try:
                                 v, m = torch.var_mean(net_input)
                                 net_input = (net_input - m) / v
 
-                            with torch.cuda.amp.autocast():
+                            with torch.amp.autocast("cuda" if torch.cuda.is_available() else "cpu"):
                                 out = net.forward(net_input)
                                 labels = dl_tuple[label_index]
 
