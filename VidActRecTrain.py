@@ -540,8 +540,6 @@ try:
                 totals = ConfusionMatrix(size=label_size)
                 logging.info(f"Starting epoch {epoch}")
                 for batch_num, dl_tuple in enumerate(dataloader):
-                    batch_num = batch_num.to(device=device)
-                    dl_tuple = dl_tuple.to(device=device)
                     dateNow = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
                     if (batch_num % 1000) == 1:
                         logging.info("Log: at tuple %d at %s" % (batch_num, dateNow))
