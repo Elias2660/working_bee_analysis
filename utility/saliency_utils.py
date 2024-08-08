@@ -134,7 +134,8 @@ def plot_gradcam(model, input_tensor, target_layer_name, target_class=None, epoc
 
     return grad_cam.detach().cpu().numpy()
 
-def plot_gradcams_for_layers(model, input_tensor, layers, epoch=None, batch_num=None, model_name='model'):
+def plot_gradcams_for_layers(batches):
+    # model, input_tensor, layers, epoch=None, batch_num=None, model_name='model'
     """
     Generates Grad-CAM visualizations for each layer and saves them as separate PNG files in a directory.
 
@@ -149,18 +150,20 @@ def plot_gradcams_for_layers(model, input_tensor, layers, epoch=None, batch_num=
     Returns:
         None
     """
-    # Create directory if it doesn't exist
-    directory = f"gradcam_plots/epoch{epoch}/batch{batch_num}"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    for batch in batches:
+        model, input_tensor, layers, epoch, batch_num, model_name = batch
+        # Create directory if it doesn't exist
+        directory = f"gradcam_plots/epoch{epoch}/batch{batch_num}"
+        if not os.path.exists(directory):
+            os.makedirs(directory)
 
-    for i, layer in enumerate(layers):
-        grad_cam = plot_gradcam(model, input_tensor, target_layer_name=layer, epoch=epoch, batch_num=batch_num)
-        plt.figure(figsize=(10, 10))
-        plt.imshow(grad_cam, cmap='jet')
-        plt.title(f'Grad-CAM - {model_name} - Layer: {layer}')
-        plt.axis('off')
-        filename = os.path.join(directory, f"{model_name}_layer_{layer.replace('.', '_')}.png")
-        plt.savefig(filename)
-        plt.close()
+        for i, layer in enumerate(layers):
+            grad_cam = plot_gradcam(model, input_tensor, target_layer_name=layer, epoch=epoch, batch_num=batch_num)
+            plt.figure(figsize=(10, 10))
+            plt.imshow(grad_cam, cmap='jet')
+            plt.title(f'Grad-CAM - {model_name} - Layer: {layer}')
+            plt.axis('off')
+            filename = os.path.join(directory, f"{model_name}_layer_{layer.replace('.', '_')}.png")
+            plt.savefig(filename)
+            plt.close()
 
