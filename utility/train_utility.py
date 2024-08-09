@@ -18,7 +18,7 @@ def updateWithScaler(loss_fn, net, net_input, labels, scaler, optimizer):
         optimizer  (torch.optim): Optimizer
     """
 
-    with torch.cuda.amp.autocast():
+    with torch.amp.autocast("cuda" if torch.cuda.is_available() else "cpu"):
         out = net.forward(net_input.contiguous())
 
     loss = loss_fn(out, labels.cuda())
