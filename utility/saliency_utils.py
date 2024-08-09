@@ -2,6 +2,7 @@ import os
 import matplotlib.pyplot as plt
 import torch
 import numpy as np
+import logging
 
 def get_module_by_name(model, module_name):
     """
@@ -152,10 +153,15 @@ def plot_gradcams_for_layers(batches):
     """
     for batch in batches:
         model, input_tensor, layers, epoch, batch_num, model_name = batch
+        # move everything to cpu
+        model = model.to('cpu')
+        input_tensor = input_tensor.to('cpu')
+        
         # Create directory if it doesn't exist
         directory = f"gradcam_plots/epoch{epoch}/batch{batch_num}"
         if not os.path.exists(directory):
             os.makedirs(directory)
+            logging.info("Directory created for Grad-CAM plots")
 
         for i, layer in enumerate(layers):
             grad_cam = plot_gradcam(model, input_tensor, target_layer_name=layer, epoch=epoch, batch_num=batch_num)
@@ -166,4 +172,6 @@ def plot_gradcams_for_layers(batches):
             filename = os.path.join(directory, f"{model_name}_layer_{layer.replace('.', '_')}.png")
             plt.savefig(filename)
             plt.close()
+
+        logging.info(f"Grad-CAM plots saved for epoch {epoch}, batch {batch_num}")
 
