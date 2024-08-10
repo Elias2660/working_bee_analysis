@@ -518,8 +518,6 @@ for i in range(label_size):
     class_names.append(f"{i}")
 
 
-gradcam_batches_a = []
-gradcam_batches_b = []
 try:
     with ProcessPoolExecutor(
         max_workers=5
@@ -654,54 +652,10 @@ try:
                                     dl_tuple[i].unsqueeze(1).to(device=device)
                                 )
                             net_input = torch.cat(raw_input, dim=1)
-
-                        # Generate Grad-CAM for each layer in model_a and model_b
-                        if len(gradcam_batches_a) < 5:
-                            gradcam_batches_a.append(
-                                [
-                                    net,
-                                    net_input[0].unsqueeze(0),
-                                    layers_a,
-                                    epoch,
-                                    batch_num,
-                                    "model_a",
-                                ]
-                            )
-                        else:
-                            logging.debug(f"Submitting plot_gradcams_for_layers with {len(gradcam_batches_a)} batches on device {device}")
-                            executor.submit(plot_gradcams_for_layers, gradcam_batches_a, device)
-                            logging.debug("Submitted plot_gradcams_for_layers")
-                            gradcam_batches_a = []
-                            # net,
-                            # net_input[0].unsqueeze(0),
-                            # layers_a,
-                            # epoch=epoch,
-                            # batch_num=batch_num,
-                            # model_name="model_a",
-
-                        if len(gradcam_batches_b) < 5:
-                            gradcam_batches_b.append(
-                                [
-                                    net,
-                                    net_input[0].unsqueeze(0),
-                                    layers_b,
-                                    epoch,
-                                    batch_num,
-                                    "model_b",
-                                ]
-                            )
-                        else:
-                            logging.debug(f"Submitting plot_gradcams_for_layers with {len(gradcam_batches_b)} batches on device {device}")
-                            executor.submit(plot_gradcams_for_layers, gradcam_batches_b, device)
-                            logging.debug("Submitted plot_gradcams_for_layers")
-                            gradcam_batches_b = []
-
-                            # net,
-                            # net_input[0].unsqueeze(0),
-                            # layers_b,
-                            # epoch=epoch,
-                            # batch_num=batch_num,
-                            # model_name="model_b",
+                            
+                            
+                        executor.submit(plot_gradcams_for_layers, net, net_input[0].unsqueeze(0), layers_a, epoch, batch_num,"model_a", device)
+                        executor.submit(plot_gradcams_for_layers, net,net_input[0].unsqueeze(0), layers_b, epoch,batch_num,"model_b", device)
 
                         logging.info(
                             f"Finished logging the data and plotting gradcam footage for epoch {epoch}, around line 630"
@@ -798,12 +752,6 @@ try:
                 },
                 args.outname,
             )
-    if len(gradcam_batches_a) > 0:
-        logging.info("Waiting for gradcam batches to finish.")
-        executor.submit(plot_gradcams_for_layers, gradcam_batches_a)
-    if len(gradcam_batches_b) > 0:
-        logging.info("Waiting for gradcam batches to finish.")
-        executor.submit(plot_gradcams_for_layers, gradcam_batches_b)
     executor.shutdown(wait=True)
 except Exception as e:
     raise e
