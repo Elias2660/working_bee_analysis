@@ -654,8 +654,11 @@ try:
                             net_input = torch.cat(raw_input, dim=1)
                             
                             
-                        executor.submit(plot_gradcams_for_layers, net, net_input[0].unsqueeze(0), layers_a, epoch, batch_num,"model_a", device)
-                        executor.submit(plot_gradcams_for_layers, net,net_input[0].unsqueeze(0), layers_b, epoch,batch_num,"model_b", device)
+                        # executor.submit(plot_gradcams_for_layers, net, net_input[0].unsqueeze(0), layers_a, epoch, batch_num,"model_a", device)
+                        # executor.submit(plot_gradcams_for_layers, net,net_input[0].unsqueeze(0), layers_b, epoch,batch_num,"model_b", device)
+
+                        plot_gradcams_for_layers(net, net_input[0].unsqueeze(0), layers_a, epoch, batch_num,"model_a", device)
+                        plot_gradcams_for_layers(net,net_input[0].unsqueeze(0), layers_b, epoch,batch_num,"model_b", device)
 
                         logging.info(
                             f"Finished logging the data and plotting gradcam footage for epoch {epoch}, around line 630"
