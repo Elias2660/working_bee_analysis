@@ -668,7 +668,7 @@ try:
                                 ]
                             )
                         else:
-                            executor.submit(plot_gradcams_for_layers, gradcam_batches_a)
+                            executor.submit(plot_gradcams_for_layers, gradcam_batches_a, device)
                             gradcam_batches_a = []
                             # net,
                             # net_input[0].unsqueeze(0),
@@ -689,7 +689,7 @@ try:
                                 ]
                             )
                         else:
-                            executor.submit(plot_gradcams_for_layers, gradcam_batches_b)
+                            executor.submit(plot_gradcams_for_layers, gradcam_batches_b, device)
                             gradcam_batches_b = []
 
                             # net,
