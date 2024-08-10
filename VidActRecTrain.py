@@ -27,6 +27,7 @@ import torch.cuda.amp
 import webdataset as wds
 from collections import namedtuple
 from concurrent.futures import ProcessPoolExecutor
+import multiprocessing as mp
 
 # Helper function to convert to images
 from torchvision import transforms
@@ -47,6 +48,8 @@ from models.convnext import ConvNextExtraTiny, ConvNextTiny, ConvNextSmall, Conv
 # logging
 import logging
 
+if __name__ == '__main__':
+    mp.set_start_method('spawn')
 
 # Argument parser setup for the program.
 parser = argparse.ArgumentParser(
