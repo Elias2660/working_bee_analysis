@@ -668,7 +668,9 @@ try:
                                 ]
                             )
                         else:
+                            logging.debug(f"Submitting plot_gradcams_for_layers with {len(gradcam_batches_a)} batches on device {device}")
                             executor.submit(plot_gradcams_for_layers, gradcam_batches_a, device)
+                            logging.debug("Submitted plot_gradcams_for_layers")
                             gradcam_batches_a = []
                             # net,
                             # net_input[0].unsqueeze(0),
@@ -689,7 +691,9 @@ try:
                                 ]
                             )
                         else:
+                            logging.debug(f"Submitting plot_gradcams_for_layers with {len(gradcam_batches_b)} batches on device {device}")
                             executor.submit(plot_gradcams_for_layers, gradcam_batches_b, device)
+                            logging.debug("Submitted plot_gradcams_for_layers")
                             gradcam_batches_b = []
 
                             # net,
