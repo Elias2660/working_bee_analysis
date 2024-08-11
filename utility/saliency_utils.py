@@ -191,6 +191,7 @@ def plot_gradcams_for_layers(
                 epoch=epoch,
                 batch_num=batch_num,
             )
+            grad_cam = np.ma.filled(grad_cam, np.nan) # fill NaN values with 0, to avoid masking errors
             plt.figure(figsize=(10, 10))
             plt.imshow(grad_cam, cmap="jet")
             plt.title(f"Grad-CAM - {model_name} - Layer: {layer}")
