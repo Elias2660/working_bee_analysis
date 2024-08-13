@@ -23,10 +23,10 @@
 
 import argparse
 import csv
+import logging
 import os
 import random
 import sys
-import logging
 
 format = "%(asctime)s: %(message)s"
 logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
