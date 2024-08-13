@@ -141,6 +141,13 @@ parser.add_argument(
     default=10,
     help="Number of epochs to run, default 10",
 )
+parser.add_argument(
+    "--gpus",
+    required=False,
+    default=1,
+    type=int,
+    help="Number of GPUs to use, default 1",
+)
 
 
 args = parser.parse_args()
@@ -158,7 +165,7 @@ trainCommand = f"python3 $TRAINPROGRAM --sample_frames {args.frames_per_sample} 
 # python verion to run the data prep program
 python3PathData = "/koko/system/anaconda/envs/python38/bin"
 # python version to run the training program
-python3PathTrain = "/koko/system/anaconda/envs/python38/bin" # changed from 39 to 38 for dependency reasons...
+python3PathTrain = "/koko/system/anaconda/envs/python38/bin"  # changed from 39 to 38 for dependency reasons...
 
 
 datacsvname = args.datacsv
@@ -282,7 +289,7 @@ for dataset_num in range(numOfSets):
         )  # write the training command to the training command
         trainFile.write("echo end-is: `date` \n \n")  # add end timestamp
         training_batch_file.write(
-            "sbatch -G 1 -o "
+            f"sbatch -G {args.gpus} -o "
             + baseName
             + "_trainlog_"
             + str(dataset_num)
