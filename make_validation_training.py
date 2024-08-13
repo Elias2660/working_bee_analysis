@@ -2,25 +2,20 @@
 # This code writes scripts to do both (1) data preparation and (2) training/evaluation on video
 # files for the ML behavior disriminator videos on the Rutgers CS computing infrastructure.
 # (c) 2023 R. P. Martin. This code is licensed under the GNU General Public License (GPL), version 3
-
 # This program takes the video list in a main data csv file and breaks it up into training and testing data sets to run k-fold validation.
 # The main dataset.csv file is created by the command 'make_train_csv.py' script and is used as input to this script.
 # After taking the input csv list, this script creates 4 additional kinds of files as output. What is produced is:
-
 # 1. A set of N smaller dataset.csv files, used for cross-fold validation, broken up from the main dataset.csv file
 # 2. N batch.sh shell scripts to to call the VidActRecDataprep.py script on the above data set files to perform the data preparation.
 # 3. A global shell file (sbatch) to run the slurm sbatch command on the above batch files.
 # 4. N training.sh shell scripts to to call the VidActRecTrain.py script on the above data tar files to perform training and evaluation.
 # 5. A batch script that runs the training scripts using the slurm sbatch command and srun commands (to get GPUs)
-
 # This script breaks up the large dataset file into multiple smaller randomized sets of 1/N size each
 # The number of sets is controlled with the --k parameter below
 # This script then creates these N dataset_XX.csv files from the main dataset file, as well
 # as N shell file that calls the VidActRecDataprep.py script that creates the tar file for the training and testing script.
-
 # The k-fold validation approach is described here:
 # See: https://towardsdatascience.com/k-fold-cross-validation-explained-in-plain-english-659e33c0bc0
-
 import argparse
 import csv
 import logging
