@@ -160,12 +160,14 @@ trainProgram = os.path.join(program_dir, "VidActRecTrain.py")  # ! FIX THIS TOO
 
 # command to run the evaluation and training program
 # trainCommand    = 'srun -G 1 python3 $TRAINPROGRAM --not_deterministic --epochs 10 --modeltype $MODEL --evaluate' # <eval-set> <a-set> <b-set> ...
-trainCommand = f"python3 $TRAINPROGRAM --sample_frames {args.frames_per_sample} --not_deterministic --epochs {args.epochs} --modeltype $MODEL --label_offset $LABEL_OFFSET --evaluate"  # <eval-set> <a-set> <b-set> ...
+# <eval-set> <a-set> <b-set> ...
+trainCommand = f"python3 $TRAINPROGRAM --sample_frames {args.frames_per_sample} --not_deterministic --epochs {args.epochs} --modeltype $MODEL --label_offset $LABEL_OFFSET --evaluate"
 
 # python verion to run the data prep program
 python3PathData = "/koko/system/anaconda/envs/python38/bin"
 # python version to run the training program
-python3PathTrain = "/koko/system/anaconda/envs/python38/bin"  # changed from 39 to 38 for dependency reasons...
+# changed from 39 to 38 for dependency reasons...
+python3PathTrain = "/koko/system/anaconda/envs/python38/bin"
 
 
 datacsvname = args.datacsv
@@ -246,7 +248,8 @@ if batchdir == ".":
 
 training_batch_file = open(training_filename, "w")
 training_batch_file.write("#!/usr/bin/bash \n")
-training_batch_file.write("# batch file for getting the training results \n \n")
+training_batch_file.write(
+    "# batch file for getting the training results \n \n")
 training_batch_file.write("cd " + currentDir + " \n")
 training_batch_file.write(
     "echo start-is: `date` \n \n"
@@ -266,12 +269,14 @@ for dataset_num in range(numOfSets):
         trainFile.write("cd " + currentDir + " \n")
         trainFile.write("export PATH=" + python3PathTrain + ":$PATH \n")
         trainFile.write("echo start-is: `date` \n \n")  # add start timestamp
-        traincommand_local = trainCommand.replace("$TRAINPROGRAM", trainProgram)
+        traincommand_local = trainCommand.replace(
+            "$TRAINPROGRAM", trainProgram)
         traincommand_local = traincommand_local.replace(
             "$LABEL_OFFSET", str(label_offset)
         )
         traincommand_local = (
-            traincommand_local + " " + baseName + "_" + str(dataset_num) + ".tar"
+            traincommand_local + " " + baseName +
+            "_" + str(dataset_num) + ".tar"
         )
         for trainingSetNum in range(numOfSets):
             if int(trainingSetNum) != int(dataset_num):
