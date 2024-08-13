@@ -248,8 +248,7 @@ if batchdir == ".":
 
 training_batch_file = open(training_filename, "w")
 training_batch_file.write("#!/usr/bin/bash \n")
-training_batch_file.write(
-    "# batch file for getting the training results \n \n")
+training_batch_file.write("# batch file for getting the training results \n \n")
 training_batch_file.write("cd " + currentDir + " \n")
 training_batch_file.write(
     "echo start-is: `date` \n \n"
@@ -269,14 +268,12 @@ for dataset_num in range(numOfSets):
         trainFile.write("cd " + currentDir + " \n")
         trainFile.write("export PATH=" + python3PathTrain + ":$PATH \n")
         trainFile.write("echo start-is: `date` \n \n")  # add start timestamp
-        traincommand_local = trainCommand.replace(
-            "$TRAINPROGRAM", trainProgram)
+        traincommand_local = trainCommand.replace("$TRAINPROGRAM", trainProgram)
         traincommand_local = traincommand_local.replace(
             "$LABEL_OFFSET", str(label_offset)
         )
         traincommand_local = (
-            traincommand_local + " " + baseName +
-            "_" + str(dataset_num) + ".tar"
+            traincommand_local + " " + baseName + "_" + str(dataset_num) + ".tar"
         )
         for trainingSetNum in range(numOfSets):
             if int(trainingSetNum) != int(dataset_num):
