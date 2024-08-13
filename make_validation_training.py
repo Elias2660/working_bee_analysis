@@ -2,31 +2,26 @@
 # This code writes scripts to do both (1) data preparation and (2) training/evaluation on video
 # files for the ML behavior disriminator videos on the Rutgers CS computing infrastructure.
 # (c) 2023 R. P. Martin. This code is licensed under the GNU General Public License (GPL), version 3
-
 # This program takes the video list in a main data csv file and breaks it up into training and testing data sets to run k-fold validation.
 # The main dataset.csv file is created by the command 'make_train_csv.py' script and is used as input to this script.
 # After taking the input csv list, this script creates 4 additional kinds of files as output. What is produced is:
-
 # 1. A set of N smaller dataset.csv files, used for cross-fold validation, broken up from the main dataset.csv file
 # 2. N batch.sh shell scripts to to call the VidActRecDataprep.py script on the above data set files to perform the data preparation.
 # 3. A global shell file (sbatch) to run the slurm sbatch command on the above batch files.
 # 4. N training.sh shell scripts to to call the VidActRecTrain.py script on the above data tar files to perform training and evaluation.
 # 5. A batch script that runs the training scripts using the slurm sbatch command and srun commands (to get GPUs)
-
 # This script breaks up the large dataset file into multiple smaller randomized sets of 1/N size each
 # The number of sets is controlled with the --k parameter below
 # This script then creates these N dataset_XX.csv files from the main dataset file, as well
 # as N shell file that calls the VidActRecDataprep.py script that creates the tar file for the training and testing script.
-
 # The k-fold validation approach is described here:
 # See: https://towardsdatascience.com/k-fold-cross-validation-explained-in-plain-english-659e33c0bc0
-
 import argparse
 import csv
+import logging
 import os
 import random
 import sys
-import logging
 
 format = "%(asctime)s: %(message)s"
 logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
@@ -40,9 +35,11 @@ parser.add_argument(
     default="dataset.csv",
     help="name of the dataset, default dataset.csv",
 )
-parser.add_argument(
-    "--k", type=int, required=False, default=3, help="number of sets, default 3"
-)
+parser.add_argument("--k",
+                    type=int,
+                    required=False,
+                    default=3,
+                    help="number of sets, default 3")
 parser.add_argument(
     "--batchdir",
     type=str,
@@ -83,35 +80,40 @@ parser.add_argument(
     type=int,
     required=False,
     default=400,
-    help="Width of output images (obtained via cropping, after applying scale), default 400",
+    help=
+    "Width of output images (obtained via cropping, after applying scale), default 400",
 )
 parser.add_argument(
     "--height",
     type=int,
     required=False,
     default=400,
-    help="Height of output images (obtained via cropping, after applying scale), default 400",
+    help=
+    "Height of output images (obtained via cropping, after applying scale), default 400",
 )
 parser.add_argument(
     "--crop_x_offset",
     type=int,
     required=False,
     default=0,
-    help="The offset (in pixels) of the crop location on the original image in the x dimension, default 0",
+    help=
+    "The offset (in pixels) of the crop location on the original image in the x dimension, default 0",
 )
 parser.add_argument(
     "--crop_y_offset",
     type=int,
     required=False,
     default=0,
-    help="The offset (in pixels) of the crop location on the original image in the y dimension, default 0",
+    help=
+    "The offset (in pixels) of the crop location on the original image in the y dimension, default 0",
 )
 parser.add_argument(
     "--label_offset",
     required=False,
     default=0,
     type=int,
-    help='The starting value of classes when training with cls labels (the labels value is "cls"), default: 0',
+    help=
+    'The starting value of classes when training with cls labels (the labels value is "cls"), default: 0',
 )
 parser.add_argument(
     "--training_only",
@@ -149,7 +151,6 @@ parser.add_argument(
     help="Number of GPUs to use, default 1",
 )
 
-
 args = parser.parse_args()
 
 # program_dir = "/research/projects/grail/rmartin/analysis-results/code/bee_analysis"
@@ -160,13 +161,14 @@ trainProgram = os.path.join(program_dir, "VidActRecTrain.py")  # ! FIX THIS TOO
 
 # command to run the evaluation and training program
 # trainCommand    = 'srun -G 1 python3 $TRAINPROGRAM --not_deterministic --epochs 10 --modeltype $MODEL --evaluate' # <eval-set> <a-set> <b-set> ...
-trainCommand = f"python3 $TRAINPROGRAM --sample_frames {args.frames_per_sample} --not_deterministic --epochs {args.epochs} --modeltype $MODEL --label_offset $LABEL_OFFSET --evaluate"  # <eval-set> <a-set> <b-set> ...
+# <eval-set> <a-set> <b-set> ...
+trainCommand = f"python3 $TRAINPROGRAM --sample_frames {args.frames_per_sample} --not_deterministic --epochs {args.epochs} --modeltype $MODEL --label_offset $LABEL_OFFSET --evaluate"
 
 # python verion to run the data prep program
 python3PathData = "/koko/system/anaconda/envs/python38/bin"
 # python version to run the training program
-python3PathTrain = "/koko/system/anaconda/envs/python38/bin"  # changed from 39 to 38 for dependency reasons...
-
+# changed from 39 to 38 for dependency reasons...
+python3PathTrain = "/koko/system/anaconda/envs/python38/bin"
 
 datacsvname = args.datacsv
 numOfSets = args.k
@@ -180,7 +182,6 @@ crop_x_offset = args.crop_x_offset
 crop_y_offset = args.crop_y_offset
 label_offset = args.label_offset
 training_only = args.training_only
-
 
 logging.info(f"datset is {datacsvname}")
 
@@ -246,11 +247,11 @@ if batchdir == ".":
 
 training_batch_file = open(training_filename, "w")
 training_batch_file.write("#!/usr/bin/bash \n")
-training_batch_file.write("# batch file for getting the training results \n \n")
+training_batch_file.write(
+    "# batch file for getting the training results \n \n")
 training_batch_file.write("cd " + currentDir + " \n")
 training_batch_file.write(
-    "echo start-is: `date` \n \n"
-)  # add start timestamp to training file
+    "echo start-is: `date` \n \n")  # add start timestamp to training file
 
 trainCommand = trainCommand.replace("$MODEL", model_name)
 
@@ -266,43 +267,30 @@ for dataset_num in range(numOfSets):
         trainFile.write("cd " + currentDir + " \n")
         trainFile.write("export PATH=" + python3PathTrain + ":$PATH \n")
         trainFile.write("echo start-is: `date` \n \n")  # add start timestamp
-        traincommand_local = trainCommand.replace("$TRAINPROGRAM", trainProgram)
+        traincommand_local = trainCommand.replace("$TRAINPROGRAM",
+                                                  trainProgram)
         traincommand_local = traincommand_local.replace(
-            "$LABEL_OFFSET", str(label_offset)
-        )
-        traincommand_local = (
-            traincommand_local + " " + baseName + "_" + str(dataset_num) + ".tar"
-        )
+            "$LABEL_OFFSET", str(label_offset))
+        traincommand_local = (traincommand_local + " " + baseName + "_" +
+                              str(dataset_num) + ".tar")
         for trainingSetNum in range(numOfSets):
             if int(trainingSetNum) != int(dataset_num):
-                traincommand_local = (
-                    traincommand_local
-                    + " "
-                    + baseName
-                    + "_"
-                    + str(trainingSetNum)
-                    + ".tar"
-                )
+                traincommand_local = (traincommand_local + " " + baseName +
+                                      "_" + str(trainingSetNum) + ".tar")
 
         trainFile.write(
-            traincommand_local + "\n"
-        )  # write the training command to the training command
+            traincommand_local +
+            "\n")  # write the training command to the training command
         trainFile.write("echo end-is: `date` \n \n")  # add end timestamp
-        training_batch_file.write(
-            f"sbatch -G {args.gpus} -o "
-            + baseName
-            + "_trainlog_"
-            + str(dataset_num)
-            + ".log "
-            + train_job_filename
-            + " \n"
-        )  # add end timestamp to training file
+        training_batch_file.write(f"sbatch -G {args.gpus} -o " + baseName +
+                                  "_trainlog_" + str(dataset_num) + ".log " +
+                                  train_job_filename +
+                                  " \n")  # add end timestamp to training file
 
     setNum = setNum + 1
 
 training_batch_file.write(
-    "echo end-is: `date` \n \n"
-)  # add end timestamp to training file
+    "echo end-is: `date` \n \n")  # add end timestamp to training file
 training_batch_file.close()
 
 logging.info("Done writing dataset and job files")
