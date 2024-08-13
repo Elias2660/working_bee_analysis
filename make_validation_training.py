@@ -35,9 +35,11 @@ parser.add_argument(
     default="dataset.csv",
     help="name of the dataset, default dataset.csv",
 )
-parser.add_argument(
-    "--k", type=int, required=False, default=3, help="number of sets, default 3"
-)
+parser.add_argument("--k",
+                    type=int,
+                    required=False,
+                    default=3,
+                    help="number of sets, default 3")
 parser.add_argument(
     "--batchdir",
     type=str,
@@ -78,35 +80,40 @@ parser.add_argument(
     type=int,
     required=False,
     default=400,
-    help="Width of output images (obtained via cropping, after applying scale), default 400",
+    help=
+    "Width of output images (obtained via cropping, after applying scale), default 400",
 )
 parser.add_argument(
     "--height",
     type=int,
     required=False,
     default=400,
-    help="Height of output images (obtained via cropping, after applying scale), default 400",
+    help=
+    "Height of output images (obtained via cropping, after applying scale), default 400",
 )
 parser.add_argument(
     "--crop_x_offset",
     type=int,
     required=False,
     default=0,
-    help="The offset (in pixels) of the crop location on the original image in the x dimension, default 0",
+    help=
+    "The offset (in pixels) of the crop location on the original image in the x dimension, default 0",
 )
 parser.add_argument(
     "--crop_y_offset",
     type=int,
     required=False,
     default=0,
-    help="The offset (in pixels) of the crop location on the original image in the y dimension, default 0",
+    help=
+    "The offset (in pixels) of the crop location on the original image in the y dimension, default 0",
 )
 parser.add_argument(
     "--label_offset",
     required=False,
     default=0,
     type=int,
-    help='The starting value of classes when training with cls labels (the labels value is "cls"), default: 0',
+    help=
+    'The starting value of classes when training with cls labels (the labels value is "cls"), default: 0',
 )
 parser.add_argument(
     "--training_only",
@@ -144,7 +151,6 @@ parser.add_argument(
     help="Number of GPUs to use, default 1",
 )
 
-
 args = parser.parse_args()
 
 # program_dir = "/research/projects/grail/rmartin/analysis-results/code/bee_analysis"
@@ -164,7 +170,6 @@ python3PathData = "/koko/system/anaconda/envs/python38/bin"
 # changed from 39 to 38 for dependency reasons...
 python3PathTrain = "/koko/system/anaconda/envs/python38/bin"
 
-
 datacsvname = args.datacsv
 numOfSets = args.k
 batchdir = args.batchdir
@@ -177,7 +182,6 @@ crop_x_offset = args.crop_x_offset
 crop_y_offset = args.crop_y_offset
 label_offset = args.label_offset
 training_only = args.training_only
-
 
 logging.info(f"datset is {datacsvname}")
 
@@ -243,11 +247,11 @@ if batchdir == ".":
 
 training_batch_file = open(training_filename, "w")
 training_batch_file.write("#!/usr/bin/bash \n")
-training_batch_file.write("# batch file for getting the training results \n \n")
+training_batch_file.write(
+    "# batch file for getting the training results \n \n")
 training_batch_file.write("cd " + currentDir + " \n")
 training_batch_file.write(
-    "echo start-is: `date` \n \n"
-)  # add start timestamp to training file
+    "echo start-is: `date` \n \n")  # add start timestamp to training file
 
 trainCommand = trainCommand.replace("$MODEL", model_name)
 
@@ -263,43 +267,30 @@ for dataset_num in range(numOfSets):
         trainFile.write("cd " + currentDir + " \n")
         trainFile.write("export PATH=" + python3PathTrain + ":$PATH \n")
         trainFile.write("echo start-is: `date` \n \n")  # add start timestamp
-        traincommand_local = trainCommand.replace("$TRAINPROGRAM", trainProgram)
+        traincommand_local = trainCommand.replace("$TRAINPROGRAM",
+                                                  trainProgram)
         traincommand_local = traincommand_local.replace(
-            "$LABEL_OFFSET", str(label_offset)
-        )
-        traincommand_local = (
-            traincommand_local + " " + baseName + "_" + str(dataset_num) + ".tar"
-        )
+            "$LABEL_OFFSET", str(label_offset))
+        traincommand_local = (traincommand_local + " " + baseName + "_" +
+                              str(dataset_num) + ".tar")
         for trainingSetNum in range(numOfSets):
             if int(trainingSetNum) != int(dataset_num):
-                traincommand_local = (
-                    traincommand_local
-                    + " "
-                    + baseName
-                    + "_"
-                    + str(trainingSetNum)
-                    + ".tar"
-                )
+                traincommand_local = (traincommand_local + " " + baseName +
+                                      "_" + str(trainingSetNum) + ".tar")
 
         trainFile.write(
-            traincommand_local + "\n"
-        )  # write the training command to the training command
+            traincommand_local +
+            "\n")  # write the training command to the training command
         trainFile.write("echo end-is: `date` \n \n")  # add end timestamp
-        training_batch_file.write(
-            f"sbatch -G {args.gpus} -o "
-            + baseName
-            + "_trainlog_"
-            + str(dataset_num)
-            + ".log "
-            + train_job_filename
-            + " \n"
-        )  # add end timestamp to training file
+        training_batch_file.write(f"sbatch -G {args.gpus} -o " + baseName +
+                                  "_trainlog_" + str(dataset_num) + ".log " +
+                                  train_job_filename +
+                                  " \n")  # add end timestamp to training file
 
     setNum = setNum + 1
 
 training_batch_file.write(
-    "echo end-is: `date` \n \n"
-)  # add end timestamp to training file
+    "echo end-is: `date` \n \n")  # add end timestamp to training file
 training_batch_file.close()
 
 logging.info("Done writing dataset and job files")
