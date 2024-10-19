@@ -164,12 +164,6 @@ trainProgram = os.path.join(program_dir, "VidActRecTrain.py")  # ! FIX THIS TOO
 # <eval-set> <a-set> <b-set> ...
 trainCommand = f"python3 $TRAINPROGRAM --sample_frames {args.frames_per_sample} --not_deterministic --epochs {args.epochs} --modeltype $MODEL --label_offset $LABEL_OFFSET --evaluate"
 
-# python verion to run the data prep program
-python3PathData = "/koko/system/anaconda/envs/python38/bin"
-# python version to run the training program
-# changed from 39 to 38 for dependency reasons...
-python3PathTrain = "/koko/system/anaconda/envs/python38/bin"
-
 datacsvname = args.datacsv
 numOfSets = args.k
 batchdir = args.batchdir
@@ -265,7 +259,6 @@ for dataset_num in range(numOfSets):
         trainFile.write("# command to run \n \n")
         trainFile.write("export TRAINPROGRAM=" + trainProgram + "\n")
         trainFile.write("cd " + currentDir + " \n")
-        trainFile.write("export PATH=" + python3PathTrain + ":$PATH \n")
         trainFile.write("echo start-is: `date` \n \n")  # add start timestamp
         traincommand_local = trainCommand.replace("$TRAINPROGRAM",
                                                   trainProgram)
