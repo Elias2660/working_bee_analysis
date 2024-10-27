@@ -26,8 +26,6 @@ import torch
 import torch.cuda.amp
 import webdataset as wds
 from collections import namedtuple
-from concurrent.futures import ProcessPoolExecutor
-import multiprocessing as mp
 
 # Helper function to convert to images
 from torchvision import transforms
@@ -48,8 +46,6 @@ from models.convnext import ConvNextExtraTiny, ConvNextTiny, ConvNextSmall, Conv
 # logging
 import logging
 
-if __name__ == '__main__':
-    mp.set_start_method('spawn')
 
 # Argument parser setup for the program.
 parser = argparse.ArgumentParser(
@@ -519,130 +515,171 @@ for i in range(label_size):
 
 
 try:
-    with ProcessPoolExecutor(
-        max_workers=5
-    ) as executor:  # for gradcam, the number of workers is arbitrary
-        if not args.no_train:
-            worst_training = None
-            if args.save_worst_n is not None:
-                worst_training = WorstExamples(
-                    args.outname.split(".")[0] + "-worstN-train",
-                    class_names,
-                    args.save_worst_n,
-                )
-                logging.info(
-                    f"Saving {args.save_worst_n} highest error training images to {worst_training.worstn_path}."
-                )
+    if not args.no_train:
+        worst_training = None
+        if args.save_worst_n is not None:
+            worst_training = WorstExamples(
+                args.outname.split(".")[0] + "-worstN-train",
+                class_names,
+                args.save_worst_n,
+            )
+            logging.info(
+                f"Saving {args.save_worst_n} highest error training images to {worst_training.worstn_path}."
+            )
+        for epoch in range(args.epochs):
+
+            logging.info(f"Starting epoch {epoch}")
+
+            # Make a confusion matrix
+            totals = ConfusionMatrix(size=label_size)
+            logging.info(f"Starting epoch {epoch}")
+            for batch_num, dl_tuple in enumerate(dataloader):
+                dateNow = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+                if (batch_num % 1000) == 1:
+                    logging.info("Log: at tuple %d at %s" % (batch_num, dateNow))
+
+                logging.debug(f"Starting batch {batch_num}")
+                optimizer.zero_grad()
+                logging.debug(f"Zeroed gradients")
+                # For debugging purposes
+                # img = transforms.ToPILImage()(dl_tuple[0][0]).convert('RGB')
+                # img.save(f"batch_{batch_num}.png")
+                # Decoding only the luminance channel means that the channel dimension has gone away here.
+                if 1 == in_frames:
+                    net_input = dl_tuple[0].unsqueeze(1).to(device=device)
+                else:
+                    raw_input = []
+                    for i in range(in_frames):
+                        raw_input.append(dl_tuple[i].unsqueeze(1).to(device=device))
+                    net_input = torch.cat(raw_input, dim=1)
+                # Normalize inputs: input = (input - mean)/stddev
+                if args.normalize:
+                    v, m = torch.var_mean(net_input)
+                    net_input = (net_input - m) / v
+
+                labels = dl_tuple[label_index]
+
+                # The label value may need to be adjust, for example if the label class is 1 based, but
+                # should be 0-based for the one_hot function.
+                labels = labels - label_offset
+
+                if use_amp:
+                    out, loss = updateWithScaler(
+                        loss_fn, net, net_input, labels, scaler, optimizer
+                    )
+                else:
+                    out, loss = updateWithoutScaler(
+                        loss_fn, net, net_input, labels, optimizer
+                    )
+
+                # plot_gradcam(net, net_input[0].unsqueeze(0), target_class=labels[0].item(), batch_num=batch_num)
+
+                # Fill in the confusion matrix and worst examples.
+                with torch.no_grad():
+                    logging.debug(f"Starting to fill in confusion matrix")
+                    # The postprocessesing should include Softmax or similar if that is required for
+                    # the network. Outputs of most classification networks are considered
+                    # probabilities (but only take that in a very loose sense of the word) so
+                    # rounding could be appropriate.
+                    classes = nn_postprocess(out)
+                    # Convert index labels to a one hot encoding for standard processing.
+                    if convert_idx_to_classes:
+                        labels = torch.nn.functional.one_hot(
+                            labels, num_classes=label_size
+                        )
+                    totals.update(predictions=classes, labels=labels)
+                    if worst_training is not None:
+                        if args.skip_metadata:
+                            metadata = [""] * labels.size(0)
+                        else:
+                            metadata = dl_tuple[metadata_index]
+                        # For each item in the batch see if it requires an update to the worst examples
+                        # If the DNN should have predicted this image was a member of the labelled class
+                        # then see if this image should be inserted into the worst_n queue for the
+                        # labelled class based upon the DNN output for this class.
+                        input_images = dl_tuple[0]
+                        for i in range(labels.size(0)):
+                            label = torch.argwhere(labels[i])[0].item()
+                            worst_training.test(
+                                label,
+                                out[i][label].item(),
+                                input_images[i],
+                                metadata[i],
+                            )
+
+            layers_a = [
+                "model_a.0.0",  # Conv2d
+                "model_a.1.0",  # Conv2d
+                "model_a.2.0",  # Conv2d
+                "model_a.3.0",  # Conv2d
+                "model_a.4.0",  # Conv2d
+            ]
+
+            # Define the layers for model_b
+            layers_b = [
+                "model_b.0.0",  # Conv2d
+                "model_b.1.0",  # Conv2d
+                "model_b.2.0",  # Conv2d
+                "model_b.3.0",  # Conv2d
+                "model_b.4.0",  # Conv2d
+            ]
+
+            net.eval()
+
             for epoch in range(args.epochs):
-
-                logging.info(f"Starting epoch {epoch}")
-
-                # Make a confusion matrix
-                totals = ConfusionMatrix(size=label_size)
-                logging.info(f"Starting epoch {epoch}")
+                logging.info(
+                    f"Logging the data (including for gradcam footage) for epoch {epoch}, around line 600"
+                )
+                last_batch = None
                 for batch_num, dl_tuple in enumerate(dataloader):
-                    dateNow = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-                    if (batch_num % 1000) == 1:
-                        logging.info("Log: at tuple %d at %s" % (batch_num, dateNow))
+                    last_batch = dl_tuple  # Keep track of the last batch
 
-                    logging.debug(f"Starting batch {batch_num}")
-                    optimizer.zero_grad()
-                    logging.debug(f"Zeroed gradients")
-                    # For debugging purposes
-                    # img = transforms.ToPILImage()(dl_tuple[0][0]).convert('RGB')
-                    # img.save(f"batch_{batch_num}.png")
-                    # Decoding only the luminance channel means that the channel dimension has gone away here.
+                if last_batch is not None:
+                    dl_tuple = last_batch
                     if 1 == in_frames:
                         net_input = dl_tuple[0].unsqueeze(1).to(device=device)
                     else:
                         raw_input = []
                         for i in range(in_frames):
-                            raw_input.append(dl_tuple[i].unsqueeze(1).to(device=device))
-                        net_input = torch.cat(raw_input, dim=1)
-                    # Normalize inputs: input = (input - mean)/stddev
-                    if args.normalize:
-                        v, m = torch.var_mean(net_input)
-                        net_input = (net_input - m) / v
-
-                    labels = dl_tuple[label_index]
-
-                    # The label value may need to be adjust, for example if the label class is 1 based, but
-                    # should be 0-based for the one_hot function.
-                    labels = labels - label_offset
-
-                    if use_amp:
-                        out, loss = updateWithScaler(
-                            loss_fn, net, net_input, labels, scaler, optimizer
-                        )
-                    else:
-                        out, loss = updateWithoutScaler(
-                            loss_fn, net, net_input, labels, optimizer
-                        )
-
-                    # plot_gradcam(net, net_input[0].unsqueeze(0), target_class=labels[0].item(), batch_num=batch_num)
-
-                    # Fill in the confusion matrix and worst examples.
-                    with torch.no_grad():
-                        logging.debug(f"Starting to fill in confusion matrix")
-                        # The postprocessesing should include Softmax or similar if that is required for
-                        # the network. Outputs of most classification networks are considered
-                        # probabilities (but only take that in a very loose sense of the word) so
-                        # rounding could be appropriate.
-                        classes = nn_postprocess(out)
-                        # Convert index labels to a one hot encoding for standard processing.
-                        if convert_idx_to_classes:
-                            labels = torch.nn.functional.one_hot(
-                                labels, num_classes=label_size
+                            raw_input.append(
+                                dl_tuple[i].unsqueeze(1).to(device=device)
                             )
-                        totals.update(predictions=classes, labels=labels)
-                        if worst_training is not None:
-                            if args.skip_metadata:
-                                metadata = [""] * labels.size(0)
-                            else:
-                                metadata = dl_tuple[metadata_index]
-                            # For each item in the batch see if it requires an update to the worst examples
-                            # If the DNN should have predicted this image was a member of the labelled class
-                            # then see if this image should be inserted into the worst_n queue for the
-                            # labelled class based upon the DNN output for this class.
-                            input_images = dl_tuple[0]
-                            for i in range(labels.size(0)):
-                                label = torch.argwhere(labels[i])[0].item()
-                                worst_training.test(
-                                    label,
-                                    out[i][label].item(),
-                                    input_images[i],
-                                    metadata[i],
-                                )
+                        net_input = torch.cat(raw_input, dim=1)
+                        
+                    plot_gradcams_for_layers(net, net_input[0].unsqueeze(0), layers_a, epoch, batch_num,"model_a", device)
+                    plot_gradcams_for_layers(net,net_input[0].unsqueeze(0), layers_b, epoch,batch_num,"model_b", device)
 
-                layers_a = [
-                    "model_a.0.0",  # Conv2d
-                    "model_a.1.0",  # Conv2d
-                    "model_a.2.0",  # Conv2d
-                    "model_a.3.0",  # Conv2d
-                    "model_a.4.0",  # Conv2d
-                ]
-
-                # Define the layers for model_b
-                layers_b = [
-                    "model_b.0.0",  # Conv2d
-                    "model_b.1.0",  # Conv2d
-                    "model_b.2.0",  # Conv2d
-                    "model_b.3.0",  # Conv2d
-                    "model_b.4.0",  # Conv2d
-                ]
-
-                net.eval()
-
-                for epoch in range(args.epochs):
                     logging.info(
-                        f"Logging the data (including for gradcam footage) for epoch {epoch}, around line 600"
+                        f"Finished logging the data and plotting gradcam footage for epoch {epoch}, around line 630"
                     )
-                    last_batch = None
-                    for batch_num, dl_tuple in enumerate(dataloader):
-                        last_batch = dl_tuple  # Keep track of the last batch
+            logging.info(
+                f"Starting to train the model for epoch {epoch}, around line 630"
+            )
+            net.train()
 
-                    if last_batch is not None:
-                        dl_tuple = last_batch
+            logging.info(f"Finished epoch {epoch}, last loss was {loss}")
+            logging.info(f"Training confusion matrix:")
+            logging.info(totals)
+            logging.info(f"Accuracy: {totals.accuracy()}")
+
+            logging.info("Printing out class statistics")
+            for cidx in range(label_size):
+                # Print out class statistics if this class was present in the data.
+                if 0 < sum(totals[cidx]):
+                    precision, recall = totals.calculateRecallPrecision(cidx)
+                    logging.info(
+                        f"Class {cidx} precision={precision}, recall={recall}"
+                    )
+            if worst_training is not None:
+                worst_training.save(epoch)
+            # Validation set
+            if args.evaluate is not None:
+                logging.info("Evaluating model - line 650")
+                net.eval()
+                with torch.no_grad():
+                    # Make a confusion matrix
+                    totals = ConfusionMatrix(size=label_size)
+                    for batch_num, dl_tuple in enumerate(eval_dataloader):
                         if 1 == in_frames:
                             net_input = dl_tuple[0].unsqueeze(1).to(device=device)
                         else:
@@ -652,110 +689,62 @@ try:
                                     dl_tuple[i].unsqueeze(1).to(device=device)
                                 )
                             net_input = torch.cat(raw_input, dim=1)
-                            
-                            
-                        # executor.submit(plot_gradcams_for_layers, net, net_input[0].unsqueeze(0), layers_a, epoch, batch_num,"model_a", device)
-                        # executor.submit(plot_gradcams_for_layers, net,net_input[0].unsqueeze(0), layers_b, epoch,batch_num,"model_b", device)
+                        # Normalize inputs: input = (input - mean)/stddev
+                        if args.normalize:
+                            v, m = torch.var_mean(net_input)
+                            net_input = (net_input - m) / v
 
-                        plot_gradcams_for_layers(net, net_input[0].unsqueeze(0), layers_a, epoch, batch_num,"model_a", device)
-                        plot_gradcams_for_layers(net,net_input[0].unsqueeze(0), layers_b, epoch,batch_num,"model_b", device)
+                        with torch.amp.autocast("cuda" if torch.cuda.is_available() else "cpu"):
+                            out = net.forward(net_input)
+                            labels = dl_tuple[label_index]
 
-                        logging.info(
-                            f"Finished logging the data and plotting gradcam footage for epoch {epoch}, around line 630"
-                        )
-                logging.info(
-                    f"Starting to train the model for epoch {epoch}, around line 630"
-                )
+                            # The label value may need to be adjust, for example if the label class is 1 based, but
+                            # should be 0-based for the one_hot function.
+                            labels = labels - label_offset
+
+                            loss = loss_fn(out, labels.to(device=device))
+                        with torch.no_grad():
+                            # The postprocessesing should include Softmax or similar if that is required for
+                            # the network. Outputs of most classification networks are considered
+                            # probabilities (but only take that in a very loose sense of the word) so
+                            # rounding is appropriate.
+                            # classes = torch.round(nn_postprocess(out)).clamp(0, 1)
+                            classes = nn_postprocess(out)
+                            # Convert index labels to a one hot encoding for standard processing.
+                            if convert_idx_to_classes:
+                                labels = torch.nn.functional.one_hot(
+                                    labels, num_classes=label_size
+                                )
+                            totals.update(predictions=classes, labels=labels)
+                    # Print evaluation information
+                    logging.info(f"Evaluation confusion matrix:")
+                    logging.info(totals)
+                    logging.info(f"Accuracy: {totals.accuracy()}")
+                    for cidx in range(label_size):
+                        # Print out class statistics if this class was present in the data.
+                        if 0 < sum(totals[cidx]):
+                            precision, recall = totals.calculateRecallPrecision(
+                                cidx
+                            )
+                            logging.info(
+                                f"Class {cidx} precision={precision}, recall={recall}"
+                            )
                 net.train()
+            # Adjust learning rate according to the learning rate schedule
+            if lr_scheduler is not None:
+                lr_scheduler.step()
 
-                logging.info(f"Finished epoch {epoch}, last loss was {loss}")
-                logging.info(f"Training confusion matrix:")
-                logging.info(totals)
-                logging.info(f"Accuracy: {totals.accuracy()}")
+        torch.save(
+            {
+                "model_dict": net.state_dict(),
+                "optim_dict": optimizer.state_dict(),
+                "py_random_state": random.getstate(),
+                "np_random_state": numpy.random.get_state(),
+                "torch_rng_state": torch.get_rng_state(),
+            },
+            args.outname,
+        )
 
-                logging.info("Printing out class statistics")
-                for cidx in range(label_size):
-                    # Print out class statistics if this class was present in the data.
-                    if 0 < sum(totals[cidx]):
-                        precision, recall = totals.calculateRecallPrecision(cidx)
-                        logging.info(
-                            f"Class {cidx} precision={precision}, recall={recall}"
-                        )
-                if worst_training is not None:
-                    worst_training.save(epoch)
-                # Validation set
-                if args.evaluate is not None:
-                    logging.info("Evaluating model - line 650")
-                    net.eval()
-                    with torch.no_grad():
-                        # Make a confusion matrix
-                        totals = ConfusionMatrix(size=label_size)
-                        for batch_num, dl_tuple in enumerate(eval_dataloader):
-                            if 1 == in_frames:
-                                net_input = dl_tuple[0].unsqueeze(1).to(device=device)
-                            else:
-                                raw_input = []
-                                for i in range(in_frames):
-                                    raw_input.append(
-                                        dl_tuple[i].unsqueeze(1).to(device=device)
-                                    )
-                                net_input = torch.cat(raw_input, dim=1)
-                            # Normalize inputs: input = (input - mean)/stddev
-                            if args.normalize:
-                                v, m = torch.var_mean(net_input)
-                                net_input = (net_input - m) / v
-
-                            with torch.amp.autocast("cuda" if torch.cuda.is_available() else "cpu"):
-                                out = net.forward(net_input)
-                                labels = dl_tuple[label_index]
-
-                                # The label value may need to be adjust, for example if the label class is 1 based, but
-                                # should be 0-based for the one_hot function.
-                                labels = labels - label_offset
-
-                                loss = loss_fn(out, labels.to(device=device))
-                            with torch.no_grad():
-                                # The postprocessesing should include Softmax or similar if that is required for
-                                # the network. Outputs of most classification networks are considered
-                                # probabilities (but only take that in a very loose sense of the word) so
-                                # rounding is appropriate.
-                                # classes = torch.round(nn_postprocess(out)).clamp(0, 1)
-                                classes = nn_postprocess(out)
-                                # Convert index labels to a one hot encoding for standard processing.
-                                if convert_idx_to_classes:
-                                    labels = torch.nn.functional.one_hot(
-                                        labels, num_classes=label_size
-                                    )
-                                totals.update(predictions=classes, labels=labels)
-                        # Print evaluation information
-                        logging.info(f"Evaluation confusion matrix:")
-                        logging.info(totals)
-                        logging.info(f"Accuracy: {totals.accuracy()}")
-                        for cidx in range(label_size):
-                            # Print out class statistics if this class was present in the data.
-                            if 0 < sum(totals[cidx]):
-                                precision, recall = totals.calculateRecallPrecision(
-                                    cidx
-                                )
-                                logging.info(
-                                    f"Class {cidx} precision={precision}, recall={recall}"
-                                )
-                    net.train()
-                # Adjust learning rate according to the learning rate schedule
-                if lr_scheduler is not None:
-                    lr_scheduler.step()
-
-            torch.save(
-                {
-                    "model_dict": net.state_dict(),
-                    "optim_dict": optimizer.state_dict(),
-                    "py_random_state": random.getstate(),
-                    "np_random_state": numpy.random.get_state(),
-                    "torch_rng_state": torch.get_rng_state(),
-                },
-                args.outname,
-            )
-    executor.shutdown(wait=True)
 except Exception as e:
     raise e
 # Post-training evaluation
