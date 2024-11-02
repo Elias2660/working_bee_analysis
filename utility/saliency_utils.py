@@ -2,28 +2,18 @@ import os
 import matplotlib.pyplot as plt
 import torch
 import numpy as np
-import logging
-
 
 def get_module_by_name(model, module_name):
     """
     Get a module by its name from a model.
     """
-    modules = module_name.split(".")
+    modules = module_name.split('.')
     mod = model
     for module in modules:
         mod = getattr(mod, module)
     return mod
 
-
-def plot_saliency_map(
-    model,
-    input_tensor,
-    target_class=None,
-    epoch=None,
-    batch_num=None,
-    model_name="model",
-):
+def plot_saliency_map(model, input_tensor, target_class=None, epoch=None, batch_num=None, model_name='model'):
     """
     Generates a saliency map for the given input tensor and model.
 
@@ -65,22 +55,14 @@ def plot_saliency_map(
 
     # Plot and save the saliency map
     plt.figure(figsize=(10, 10))
-    plt.imshow(saliency, cmap="hot")
-    plt.title(f"Saliency Map - {model_name}")
-    plt.axis("off")
+    plt.imshow(saliency, cmap='hot')
+    plt.title(f'Saliency Map - {model_name}')
+    plt.axis('off')
     filename = os.path.join(directory, f"saliency_map_{model_name}.png")
     plt.savefig(filename)
     plt.close()
 
-
-def plot_gradcam(
-    model,
-    input_tensor,
-    target_layer_name,
-    target_class=None,
-    epoch=None,
-    batch_num=None,
-):
+def plot_gradcam(model, input_tensor, target_layer_name, target_class=None, epoch=None, batch_num=None):
     """
     Generates a Grad-CAM visualization for the given input tensor and model.
 
@@ -95,10 +77,9 @@ def plot_gradcam(
     Returns:
         Grad-CAM visualization as a numpy array.
     """
-
     def hook_fn(module, input, output):
         model.activations = output
-        output.register_hook(lambda grad: setattr(model, "activations_grad", grad))
+        output.register_hook(lambda grad: setattr(model, 'activations_grad', grad))
 
     # Register hook to the target layer
     target_layer = get_module_by_name(model, target_layer_name)
@@ -153,11 +134,7 @@ def plot_gradcam(
 
     return grad_cam.detach().cpu().numpy()
 
-
-def plot_gradcams_for_layers(
-    model, input_tensor, layers, epoch, batch_num, model_name, device
-):
-    # model, input_tensor, layers, epoch=None, batch_num=None, model_name='model'
+def plot_gradcams_for_layers(model, input_tensor, layers, epoch=None, batch_num=None, model_name='model'):
     """
     Generates Grad-CAM visualizations for each layer and saves them as separate PNG files in a directory.
 
@@ -172,39 +149,17 @@ def plot_gradcams_for_layers(
     Returns:
         None
     """
-    try:
-        # move everything to cpu
-        model = model.to(torch.device("cpu"))
-        input_tensor = input_tensor.to(torch.device("cpu"))
+    # Create directory if it doesn't exist
+    directory = f"gradcam_plots/epoch{epoch}/batch{batch_num}"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
-        # Create directory if it doesn't exist
-        directory = f"gradcam_plots/epoch{epoch}/batch{batch_num}"
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-            logging.info("Directory created for Grad-CAM plots")
-
-        for i, layer in enumerate(layers):
-            grad_cam = plot_gradcam(
-                model,
-                input_tensor,
-                target_layer_name=layer,
-                epoch=epoch,
-                batch_num=batch_num,
-            )
-            grad_cam = np.ma.filled(grad_cam, np.nan) # fill NaN values with 0, to avoid masking errors
-            plt.figure(figsize=(10, 10))
-            plt.imshow(grad_cam, cmap="jet")
-            plt.title(f"Grad-CAM - {model_name} - Layer: {layer}")
-            plt.axis("off")
-            filename = os.path.join(
-                directory, f"{model_name}_layer_{layer.replace('.', '_')}.png"
-            )
-            plt.savefig(filename)
-            plt.close()
-
-        model.to(device)
-        input_tensor.to(device)
-        logging.info(f"Grad-CAM plots saved for epoch {epoch}, batch {batch_num}")
-    except Exception as e:
-        logging.error(f"Error in plot_gradcams_for_layers: {e}")
-        raise
+    for i, layer in enumerate(layers):
+        grad_cam = plot_gradcam(model, input_tensor, target_layer_name=layer, epoch=epoch, batch_num=batch_num)
+        plt.figure(figsize=(10, 10))
+        plt.imshow(grad_cam, cmap='jet')
+        plt.title(f'Grad-CAM - {model_name} - Layer: {layer}')
+        plt.axis('off')
+        filename = os.path.join(directory, f"{model_name}_layer_{layer.replace('.', '_')}.png")
+        plt.savefig(filename)
+        plt.close()
