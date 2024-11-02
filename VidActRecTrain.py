@@ -218,10 +218,11 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-
-format = "%(asctime)s: %(message)s"
-logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
-
+logging.basicConfig(
+    format="%(asctime)s: %(message)s",
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 if args.debug:
     logging.getLogger().setLevel(logging.DEBUG)
     logging.debug("Debugging enabled.")
