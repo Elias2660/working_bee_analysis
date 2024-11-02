@@ -23,9 +23,11 @@ import os
 import random
 import sys
 
-format = "%(asctime)s: %(message)s"
-logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
-
+logging.basicConfig(
+    format="%(asctime)s: %(message)s",
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 parser = argparse.ArgumentParser(description="Create k-fold validation sets.")
 
 parser.add_argument(
