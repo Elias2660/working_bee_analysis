@@ -627,32 +627,37 @@ try:
 
             net.eval()
 
-            for epoch in range(args.epochs):
+
+            logging.info(
+                f"Logging the data (including for gradcam footage) for epoch {epoch}, around line 600"
+            )
+            last_batch = None
+            batch_count = 0
+            for batch_num, dl_tuple in enumerate(dataloader):
+                last_batch = dl_tuple  # Keep track of the last batch
+                
+                # given problems with the gradcams, we'll be batching every 5th batch
+                if batch_count % 5 == 0:
+                    if last_batch is not None:
+                        dl_tuple = last_batch
+                        if 1 == in_frames:
+                            net_input = dl_tuple[0].unsqueeze(1).to(device=device)
+                        else:
+                            raw_input = []
+                            for i in range(in_frames):
+                                raw_input.append(
+                                    dl_tuple[i].unsqueeze(1).to(device=device)
+                                )
+                            net_input = torch.cat(raw_input, dim=1)
+                            
+                        plot_gradcams_for_layers(net, net_input[0].unsqueeze(0), layers_a, epoch, batch_num,"model_a")
+                        plot_gradcams_for_layers(net,net_input[0].unsqueeze(0), layers_b, epoch,batch_num,"model_b")
+
                 logging.info(
-                    f"Logging the data (including for gradcam footage) for epoch {epoch}, around line 600"
+                    f"Finished logging the data and plotting gradcam footage for epoch {epoch}, around line 630"
                 )
-                last_batch = None
-                for batch_num, dl_tuple in enumerate(dataloader):
-                    last_batch = dl_tuple  # Keep track of the last batch
-
-                if last_batch is not None:
-                    dl_tuple = last_batch
-                    if 1 == in_frames:
-                        net_input = dl_tuple[0].unsqueeze(1).to(device=device)
-                    else:
-                        raw_input = []
-                        for i in range(in_frames):
-                            raw_input.append(
-                                dl_tuple[i].unsqueeze(1).to(device=device)
-                            )
-                        net_input = torch.cat(raw_input, dim=1)
-                        
-                    plot_gradcams_for_layers(net, net_input[0].unsqueeze(0), layers_a, epoch, batch_num,"model_a")
-                    plot_gradcams_for_layers(net,net_input[0].unsqueeze(0), layers_b, epoch,batch_num,"model_b")
-
-                    logging.info(
-                        f"Finished logging the data and plotting gradcam footage for epoch {epoch}, around line 630"
-                    )
+                
+                
             logging.info(
                 f"Starting to train the model for epoch {epoch}, around line 630"
             )
