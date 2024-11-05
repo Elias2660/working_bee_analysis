@@ -666,9 +666,9 @@ try:
                             "model_b",
                         )
                         batch_count += 1
-                logging.info(
-                    f"Finished logging the data and plotting gradcam footage for epoch {epoch}, batch count is {batch_count}"
-                )
+            logging.info(
+                f"Finished logging the data and plotting gradcam footage for epoch {epoch}, for {batch_count} number of batches"
+            )
 
             logging.info(f"Starting to train the model for epoch {epoch}")
             net.train()
