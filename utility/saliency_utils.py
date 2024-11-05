@@ -246,3 +246,4 @@ def plot_gradcams_for_layers(
         plot_weights(
             model, layer, epoch=epoch, batch_num=batch_num, model_name=model_name
         )
+        plot_saliency_map(model, input_tensor, epoch=epoch, batch_num=batch_num, model_name=model_name)
