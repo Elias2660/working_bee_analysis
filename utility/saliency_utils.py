@@ -72,36 +72,50 @@ def plot_saliency_map(
     plt.close()
 
 
+
 def plot_weights(model, layer_name, epoch=None, batch_num=None, model_name="model"):
     """
     Plots the weights of the specified layer and saves them as a PNG file.
-
+    
     Args:
         model (torch.nn.Module): The trained model.
         layer_name (str): The name of the layer whose weights are to be plotted.
         epoch (int, optional): The epoch number for the filename.
         batch_num (int, optional): The batch number for the filename.
         model_name (str, optional): The name of the model part ('model_a' or 'model_b').
-
+    
     Returns:
         None
     """
     layer = get_module_by_name(model, layer_name)
     weights = layer.weight.data.cpu().numpy()
-
+    
     # Create directory if it doesn't exist
     directory = f"weights_plots/epoch{epoch}/batch{batch_num}"
     if not os.path.exists(directory):
         os.makedirs(directory)
-
+    
+    # Determine the number of filters
+    num_filters = weights.shape[0]
+    
+    # Determine the grid size for subplots
+    grid_size = int(np.ceil(np.sqrt(num_filters)))
+    
     # Plot and save the weights
-    plt.figure(figsize=(10, 10))
-    plt.imshow(weights, cmap="viridis")
-    plt.title(f"Weights - {model_name} - Layer: {layer_name}")
-    plt.axis("off")
-    filename = os.path.join(
-        directory, f"{model_name}_layer_{layer_name.replace('.', '_')}_weights.png"
-    )
+    fig, axes = plt.subplots(grid_size, grid_size, figsize=(15, 15))
+    axes = axes.flatten()
+    
+    for i in range(num_filters):
+        if len(weights.shape) == 4:  # Conv2d layer
+            filter_weights = weights[i, 0, :, :]
+        else:  # Linear layer
+            filter_weights = weights[i, :]
+        
+        axes[i].imshow(filter_weights, cmap="viridis")
+        axes[i].axis("off")
+    
+    plt.suptitle(f"Weights - {model_name} - Layer: {layer_name}")
+    filename = os.path.join(directory, f"{model_name}_layer_{layer_name.replace('.', '_')}_weights.png")
     plt.savefig(filename)
     plt.close()
 
