@@ -627,7 +627,6 @@ try:
 
             net.eval()
 
-
             logging.info(
                 f"Logging the data (including for gradcam footage) for epoch {epoch}, around line 600"
             )
@@ -635,7 +634,7 @@ try:
             batch_count = 0
             for batch_num, dl_tuple in enumerate(dataloader):
                 last_batch = dl_tuple  # Keep track of the last batch
-                
+
                 # given problems with the gradcams, we'll be batching every 5th batch
                 if batch_count < 20:
                     if last_batch is not None:
@@ -649,18 +648,29 @@ try:
                                     dl_tuple[i].unsqueeze(1).to(device=device)
                                 )
                             net_input = torch.cat(raw_input, dim=1)
-                            
-                        plot_gradcams_for_layers(net, net_input[0].unsqueeze(0), layers_a, epoch, batch_num,"model_a")
-                        plot_gradcams_for_layers(net,net_input[0].unsqueeze(0), layers_b, epoch,batch_num,"model_b")
+
+                        plot_gradcams_for_layers(
+                            net,
+                            net_input[0].unsqueeze(0),
+                            layers_a,
+                            epoch,
+                            batch_num,
+                            "model_a",
+                        )
+                        plot_gradcams_for_layers(
+                            net,
+                            net_input[0].unsqueeze(0),
+                            layers_b,
+                            epoch,
+                            batch_num,
+                            "model_b",
+                        )
                         batch_count += 1
                 logging.info(
-                    f"Finished logging the data and plotting gradcam footage for epoch {epoch}, around line 630"
+                    f"Finished logging the data and plotting gradcam footage for epoch {epoch}, batch count is {batch_count}"
                 )
-                
-                
-            logging.info(
-                f"Starting to train the model for epoch {epoch}, around line 630"
-            )
+
+            logging.info(f"Starting to train the model for epoch {epoch}")
             net.train()
 
             logging.info(f"Finished epoch {epoch}, last loss was {loss}")
@@ -673,9 +683,7 @@ try:
                 # Print out class statistics if this class was present in the data.
                 if 0 < sum(totals[cidx]):
                     precision, recall = totals.calculateRecallPrecision(cidx)
-                    logging.info(
-                        f"Class {cidx} precision={precision}, recall={recall}"
-                    )
+                    logging.info(f"Class {cidx} precision={precision}, recall={recall}")
             if worst_training is not None:
                 worst_training.save(epoch)
             # Validation set
@@ -700,7 +708,9 @@ try:
                             v, m = torch.var_mean(net_input)
                             net_input = (net_input - m) / v
 
-                        with torch.amp.autocast("cuda" if torch.cuda.is_available() else "cpu"):
+                        with torch.amp.autocast(
+                            "cuda" if torch.cuda.is_available() else "cpu"
+                        ):
                             out = net.forward(net_input)
                             labels = dl_tuple[label_index]
 
@@ -729,9 +739,7 @@ try:
                     for cidx in range(label_size):
                         # Print out class statistics if this class was present in the data.
                         if 0 < sum(totals[cidx]):
-                            precision, recall = totals.calculateRecallPrecision(
-                                cidx
-                            )
+                            precision, recall = totals.calculateRecallPrecision(cidx)
                             logging.info(
                                 f"Class {cidx} precision={precision}, recall={recall}"
                             )
