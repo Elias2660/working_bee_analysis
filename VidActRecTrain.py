@@ -637,7 +637,7 @@ try:
                 last_batch = dl_tuple  # Keep track of the last batch
                 
                 # given problems with the gradcams, we'll be batching every 5th batch
-                if batch_count % 5 == 0:
+                if batch_count % 200 == 0:
                     if last_batch is not None:
                         dl_tuple = last_batch
                         if 1 == in_frames:
