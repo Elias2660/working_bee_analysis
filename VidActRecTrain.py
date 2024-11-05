@@ -637,7 +637,7 @@ try:
                 last_batch = dl_tuple  # Keep track of the last batch
                 
                 # given problems with the gradcams, we'll be batching every 5th batch
-                if batch_count % 200 == 0:
+                if batch_count < 20:
                     if last_batch is not None:
                         dl_tuple = last_batch
                         if 1 == in_frames:
@@ -652,7 +652,7 @@ try:
                             
                         plot_gradcams_for_layers(net, net_input[0].unsqueeze(0), layers_a, epoch, batch_num,"model_a")
                         plot_gradcams_for_layers(net,net_input[0].unsqueeze(0), layers_b, epoch,batch_num,"model_b")
-
+                        batch_count += 1
                 logging.info(
                     f"Finished logging the data and plotting gradcam footage for epoch {epoch}, around line 630"
                 )
