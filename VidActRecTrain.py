@@ -362,7 +362,7 @@ logging.info(
 )
 
 dataset = (
-    wds.WebDataset(args.dataset, shardshuffle=True)
+    wds.WebDataset(args.dataset, shardshuffle=20000 // in_frames)
     .shuffle(20000 // in_frames, initial=20000 // in_frames)
     .decode("l")
     .to_tuple(*decode_strs)
