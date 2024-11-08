@@ -56,6 +56,9 @@ def plot_saliency_map(
 
     # Get gradients
     saliency = input_tensor.grad.data.abs().squeeze().cpu().numpy()
+    
+    if saliency.ndim == 3:
+        saliency = saliency.max(axis=0)
 
     # Create directory if it doesn't exist
     directory = f"saliency_maps/epoch{epoch}/batch{batch_num}"
