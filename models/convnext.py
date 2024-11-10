@@ -72,7 +72,7 @@ class ConvNextBase(nn.Module):
             # won't happen unless we continue running this program until long after our planet has
             # been consumed by the sun and just use the regular normal and then clamp it for fun.
             nn.init.normal_(module.weight, std=0.02)
-            module.weight.clamp(min=-2, max=2)
+            module.weight.clamp(min=-5, max=5)  # testing with a change with the clamping
             nn.init.constant_(module.bias, 0)
 
     def createResLayer(self, i, out_size=None):
