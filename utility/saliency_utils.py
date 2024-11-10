@@ -58,8 +58,7 @@ def plot_saliency_map(
     saliency = input_tensor.grad.data.abs().squeeze().cpu().numpy()
     
     if saliency.ndim == 3:
-        saliency = saliency.max(axis=0)
-
+        saliency = saliency.mean(axis=0) # use max, testing with mean for now to see if the map will change
     # Create directory if it doesn't exist
     directory = f"saliency_maps/epoch{epoch}/batch{batch_num}"
     if not os.path.exists(directory):
