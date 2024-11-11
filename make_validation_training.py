@@ -37,11 +37,9 @@ parser.add_argument(
     default="dataset.csv",
     help="name of the dataset, default dataset.csv",
 )
-parser.add_argument("--k",
-                    type=int,
-                    required=False,
-                    default=3,
-                    help="number of sets, default 3")
+parser.add_argument(
+    "--k", type=int, required=False, default=3, help="number of sets, default 3"
+)
 parser.add_argument(
     "--batchdir",
     type=str,
@@ -82,40 +80,35 @@ parser.add_argument(
     type=int,
     required=False,
     default=400,
-    help=
-    "Width of output images (obtained via cropping, after applying scale), default 400",
+    help="Width of output images (obtained via cropping, after applying scale), default 400",
 )
 parser.add_argument(
     "--height",
     type=int,
     required=False,
     default=400,
-    help=
-    "Height of output images (obtained via cropping, after applying scale), default 400",
+    help="Height of output images (obtained via cropping, after applying scale), default 400",
 )
 parser.add_argument(
     "--crop_x_offset",
     type=int,
     required=False,
     default=0,
-    help=
-    "The offset (in pixels) of the crop location on the original image in the x dimension, default 0",
+    help="The offset (in pixels) of the crop location on the original image in the x dimension, default 0",
 )
 parser.add_argument(
     "--crop_y_offset",
     type=int,
     required=False,
     default=0,
-    help=
-    "The offset (in pixels) of the crop location on the original image in the y dimension, default 0",
+    help="The offset (in pixels) of the crop location on the original image in the y dimension, default 0",
 )
 parser.add_argument(
     "--label_offset",
     required=False,
     default=0,
     type=int,
-    help=
-    'The starting value of classes when training with cls labels (the labels value is "cls"), default: 0',
+    help='The starting value of classes when training with cls labels (the labels value is "cls"), default: 0',
 )
 parser.add_argument(
     "--training_only",
@@ -152,6 +145,13 @@ parser.add_argument(
     type=int,
     help="Number of GPUs to use, default 1",
 )
+parser.add_argument(
+    "--remove-dataset-sub",
+    required=False,
+    default=False,
+    action="store_true",
+    help="don't create the dataset_*.csv files",
+)
 
 args = parser.parse_args()
 
@@ -184,36 +184,37 @@ logging.info(f"datset is {datacsvname}")
 # set the random number generator
 random.seed(seed)
 
-with open(datacsvname) as datacsv:
-    conf_reader = csv.reader(datacsv)
-    header = next(conf_reader)
-    # Remove all spaces from the header strings
-    header = ["".join(col.split(" ")) for col in header]
-    logging.info(f"header is {header}")
-    file_col = header.index("filename")
-    class_col = header.index("class")
-    beginf_col = header.index("beginframe")
-    endf_col = header.index("endframe")
+if not args.remove_dataset_sub:
+    with open(datacsvname) as datacsv:
+        conf_reader = csv.reader(datacsv)
+        header = next(conf_reader)
+        # Remove all spaces from the header strings
+        header = ["".join(col.split(" ")) for col in header]
+        logging.info(f"header is {header}")
+        file_col = header.index("filename")
+        class_col = header.index("class")
+        beginf_col = header.index("beginframe")
+        endf_col = header.index("endframe")
 
-    loop_counter = 0
-    all_csv_rows = []
-    # Put all the rows in the csv file into a list
-    for row in conf_reader:
-        all_csv_rows.append(row)
-    pass
+        loop_counter = 0
+        all_csv_rows = []
+        # Put all the rows in the csv file into a list
+        for row in conf_reader:
+            all_csv_rows.append(row)
+        pass
 
-# create a randomized permutation
-random_rows = random.shuffle(all_csv_rows)
-numRows = len(all_csv_rows)
+    # create a randomized permutation
+    random_rows = random.shuffle(all_csv_rows)
+    numRows = len(all_csv_rows)
 
-# figure out the number of files to put into each dataset
-numFilesPerSet = int(numRows / numOfSets)
-extraFiles = numRows % numOfSets
+    # figure out the number of files to put into each dataset
+    numFilesPerSet = int(numRows / numOfSets)
+    extraFiles = numRows % numOfSets
 
-# create test_N and train_N files for each of the k folds
-logging.info(
-    f"Splitting {numRows} rows into {numFilesPerSet}/set with {extraFiles} extra"
-)
+    # create test_N and train_N files for each of the k folds
+    logging.info(
+        f"Splitting {numRows} rows into {numFilesPerSet}/set with {extraFiles} extra"
+    )
 
 # foreach dataset, construct a csv of the files in that set
 baseNameFile = datacsvname.split(".csv")
@@ -222,17 +223,18 @@ setNum = 0
 currentDir = os.getcwd()
 
 # Write out the split csv files.
-for dataset_num in range(numOfSets):
-    dataset_filename = baseName + "_" + str(dataset_num) + ".csv"
-    base_row = setNum * numFilesPerSet
-    with open(dataset_filename, "w") as dsetFile:
-        # write out the header row at the top of the set
-        dsetFile.write("file, class, begin frame, end frame\n")
-        # write out all the rows for this set
-        for rowNum in range(base_row, base_row + numFilesPerSet):
-            dsetFile.write(",".join(all_csv_rows[rowNum]))
-            dsetFile.write("\n")
-    setNum = setNum + 1
+if not args.remove_dataset_sub:
+    for dataset_num in range(numOfSets):
+        dataset_filename = baseName + "_" + str(dataset_num) + ".csv"
+        base_row = setNum * numFilesPerSet
+        with open(dataset_filename, "w") as dsetFile:
+            # write out the header row at the top of the set
+            dsetFile.write("file, class, begin frame, end frame\n")
+            # write out all the rows for this set
+            for rowNum in range(base_row, base_row + numFilesPerSet):
+                dsetFile.write(",".join(all_csv_rows[rowNum]))
+                dsetFile.write("\n")
+        setNum = setNum + 1
 
 # Finish here if the only_split option was set.
 if args.only_split:
@@ -243,11 +245,12 @@ if batchdir == ".":
 
 training_batch_file = open(training_filename, "w")
 training_batch_file.write("#!/usr/bin/bash \n")
-training_batch_file.write(
-    "# batch file for getting the training results \n \n")
+training_batch_file.write("source venv/bin/activate \n")
+training_batch_file.write("# batch file for getting the training results \n \n")
 training_batch_file.write("cd " + currentDir + " \n")
 training_batch_file.write(
-    "echo start-is: `date` \n \n")  # add start timestamp to training file
+    "echo start-is: `date` \n \n"
+)  # add start timestamp to training file
 
 trainCommand = trainCommand.replace("$MODEL", model_name)
 
@@ -257,35 +260,48 @@ for dataset_num in range(numOfSets):
     # open the batch file that runs the testing and training commands
     with open(train_job_filename, "w") as trainFile:
         trainFile.write("#!/usr/bin/bash \n")
-        # trainFile.write("#SBATCH --gpus-per-node=1 \n")
+        trainFile.write("source venv/bin/activate \n")
         trainFile.write("# command to run \n \n")
         trainFile.write("export TRAINPROGRAM=" + trainProgram + "\n")
         trainFile.write("cd " + currentDir + " \n")
         trainFile.write("echo start-is: `date` \n \n")  # add start timestamp
-        traincommand_local = trainCommand.replace("$TRAINPROGRAM",
-                                                  trainProgram)
+        traincommand_local = trainCommand.replace("$TRAINPROGRAM", trainProgram)
         traincommand_local = traincommand_local.replace(
-            "$LABEL_OFFSET", str(label_offset))
-        traincommand_local = (traincommand_local + " " + baseName + "_" +
-                              str(dataset_num) + ".tar")
+            "$LABEL_OFFSET", str(label_offset)
+        )
+        traincommand_local = (
+            traincommand_local + " " + baseName + "_" + str(dataset_num) + ".tar"
+        )
         for trainingSetNum in range(numOfSets):
             if int(trainingSetNum) != int(dataset_num):
-                traincommand_local = (traincommand_local + " " + baseName +
-                                      "_" + str(trainingSetNum) + ".tar")
+                traincommand_local = (
+                    traincommand_local
+                    + " "
+                    + baseName
+                    + "_"
+                    + str(trainingSetNum)
+                    + ".tar"
+                )
 
         trainFile.write(
-            traincommand_local +
-            "\n")  # write the training command to the training command
+            traincommand_local + "\n"
+        )  # write the training command to the training command
         trainFile.write("echo end-is: `date` \n \n")  # add end timestamp
-        training_batch_file.write(f"sbatch -G {args.gpus} -o " + baseName +
-                                  "_trainlog_" + str(dataset_num) + ".log " +
-                                  train_job_filename +
-                                  " \n")  # add end timestamp to training file
+        training_batch_file.write(
+            f"sbatch -G {args.gpus} -o "
+            + baseName
+            + "_trainlog_"
+            + str(dataset_num)
+            + ".log "
+            + train_job_filename
+            + " \n"
+        )  # add end timestamp to training file
 
     setNum = setNum + 1
 
 training_batch_file.write(
-    "echo end-is: `date` \n \n")  # add end timestamp to training file
+    "echo end-is: `date` \n \n"
+)  # add end timestamp to training file
 training_batch_file.close()
 
 logging.info("Done writing dataset and job files")
