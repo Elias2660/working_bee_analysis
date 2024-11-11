@@ -656,6 +656,7 @@ try:
                             epoch,
                             batch_num,
                             "model_a",
+                            args.evaluate.split("/")[-1].split(".")[0],
                         )
                         plot_gradcams_for_layers(
                             net,
@@ -664,6 +665,7 @@ try:
                             epoch,
                             batch_num,
                             "model_b",
+                            args.evaluate.split("/")[-1].split(".")[0],
                         )
                         batch_count += 1
             logging.info(
