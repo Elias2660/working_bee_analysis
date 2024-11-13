@@ -671,16 +671,17 @@ try:
             logging.info(
                 f"Finished logging the data and plotting gradcam footage for epoch {epoch}, for {batch_count} number of batches"
             )
-
-            logging.info(f"Starting to train the model for epoch {epoch}")
+            
+            logging.info(f"\n -- Starting to train the model for epoch {epoch} --")
             net.train()
 
             logging.info(f"Finished epoch {epoch}, last loss was {loss}")
             logging.info(f"Training confusion matrix:")
             logging.info(totals)
             logging.info(f"Accuracy: {totals.accuracy()}")
+            logging.info("-- Finished Training epoch -- \n")
 
-            logging.info("Printing out class statistics")
+            logging.info("\n-- Class statistics --")
             for cidx in range(label_size):
                 # Print out class statistics if this class was present in the data.
                 if 0 < sum(totals[cidx]):
@@ -690,7 +691,7 @@ try:
                 worst_training.save(epoch)
             # Validation set
             if args.evaluate is not None:
-                logging.info("Evaluating model - line 650")
+                logging.info("\nEvaluating model")
                 net.eval()
                 with torch.no_grad():
                     # Make a confusion matrix
@@ -735,7 +736,7 @@ try:
                                 )
                             totals.update(predictions=classes, labels=labels)
                     # Print evaluation information
-                    logging.info(f"Evaluation confusion matrix:")
+                    logging.info(f"\n\nEvaluation confusion matrix:")
                     logging.info(totals)
                     logging.info(f"Accuracy: {totals.accuracy()}")
                     for cidx in range(label_size):
@@ -746,6 +747,7 @@ try:
                                 f"Class {cidx} precision={precision}, recall={recall}"
                             )
                 net.train()
+                logging.info(" -- Finished Evaluation -- \n\n")
             # Adjust learning rate according to the learning rate schedule
             if lr_scheduler is not None:
                 lr_scheduler.step()
@@ -880,7 +882,7 @@ if args.evaluate is not None:
             top_eval.save("evaluation")
 
         # Print evaluation information
-        logging.info(f"Evaluation confusion matrix:")
+        logging.info(f"Evaluating confusion matrix:")
         logging.info(totals)
         logging.info(f"Accuracy: {totals.accuracy()}")
         for cidx in range(label_size):
