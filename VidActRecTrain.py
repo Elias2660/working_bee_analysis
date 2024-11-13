@@ -628,7 +628,7 @@ try:
             net.eval()
 
             logging.info(
-                f"Logging the data (including for gradcam footage) for epoch {epoch}, around line 600"
+                f"Logging the data (including for gradcam footage) for epoch {epoch}"
             )
             last_batch = None
             batch_count = 0
