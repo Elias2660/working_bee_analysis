@@ -537,7 +537,7 @@ try:
             for batch_num, dl_tuple in enumerate(dataloader):
                 dateNow = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
                 if (batch_num % 1000) == 1:
-                    logging.info("Log: at tuple %d at %s" % (batch_num, dateNow))
+                    logging.info("At tuple %d at %s" % (batch_num, dateNow))
 
                 logging.debug(f"Starting batch {batch_num}")
                 optimizer.zero_grad()
