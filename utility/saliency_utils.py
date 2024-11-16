@@ -1,280 +1,210 @@
 import os
-import matplotlib.pyplot as plt
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
+from pytorch_grad_cam import GradCAM
+from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
+from pytorch_grad_cam.utils.image import show_cam_on_image
 
 
-def get_module_by_name(model, module_name):
+def get_layer_by_name(model, layer_name):
     """
-    Get a module by its name from a model.
+    Retrieves a layer from the model based on a dot-separated path.
+    
+    Args:
+        model (torch.nn.Module): The model from which to retrieve the layer.
+        layer_name (str): Dot-separated path of the layer (e.g., "model_a.4.0").
+    
+    Returns:
+        torch.nn.Module: The layer corresponding to the provided path.
     """
-    modules = module_name.split(".")
-    mod = model
-    for module in modules:
-        mod = getattr(mod, module)
-    return mod
+    if isinstance(layer_name, list):
+        layer_name = layer_name[0]  # Use the first item if it's a list
+
+    parts = layer_name.split('.')  # Split the layer name by dots
+    layer = model
+    for part in parts:
+        layer = getattr(layer, part)  # Get the layer attribute
+    return layer
 
 
-def plot_saliency_map(
-    model,
-    input_tensor,
-    target_class=None,
-    epoch=None,
-    batch_num=None,
-    model_name="model",
-    dataset_name="dataset_0",
-):
+def plot_gradcam_for_multichannel_input(model, input_tensor, target_layer_name, model_name, target_classes=None, batch_num=None):
     """
-    Generates a saliency map for the given input tensor and model.
+    Generates and saves Grad-CAM overlays for each channel in a multi-channel input tensor for the entire batch.
 
     Args:
         model (torch.nn.Module): The trained model.
-        input_tensor (torch.Tensor): The input tensor for which the saliency map is to be generated.
-        target_class (int, optional): The target class index. If None, uses the predicted class.
-        epoch (int, optional): The epoch number for the filename.
+        input_tensor (torch.Tensor): The input tensor with shape [batch_size, C, H, W].
+        target_layer_name (str): Dot-separated path to the target layer for Grad-CAM.
+        model_name (str): Identifier for the model, e.g., "model_a" or "model_b".
+        target_classes (list, optional): A list of target class indices for each image in the batch.
         batch_num (int, optional): The batch number for the filename.
-        model_name (str, optional): The name of the model part ('model_a' or 'model_b').
 
     Returns:
         None
     """
-    model.eval()
-    input_tensor.requires_grad_()
-
-    # Forward pass
-    output = model(input_tensor)
-
-    # If target_class is not specified, use the predicted class
-    if target_class is None:
-        target_class = output.argmax(dim=1).item()
-
-    # Zero gradients
-    model.zero_grad()
-
-    # Backward pass
-    target = output[0, target_class]
-    target.backward()
-
-    # Get gradients
-    saliency = input_tensor.grad.data.abs().squeeze().cpu().numpy()
-
-    if saliency.ndim == 3:
-        saliency = saliency.mean(
-            axis=0
-        )  # use max, testing with mean for now to see if the map will change
-    # Create directory if it doesn't exist
-    directory = f"saliency_maps/{dataset_name}/epoch{epoch}/batch{batch_num}"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-    # Plot and save the saliency map
-    plt.figure(figsize=(10, 10))
-    plt.imshow(saliency, cmap="hot")
-    plt.title(f"Saliency Map - {model_name}")
-    plt.axis("off")
-    filename = os.path.join(directory, f"saliency_map_{model_name}.png")
-    plt.savefig(filename)
-    plt.close()
-
-
-def plot_weights(
-    model,
-    layer_name,
-    epoch=None,
-    batch_num=None,
-    model_name="model",
-    dataset_name="dataset_0",
-):
-    """
-    Plots the weights of the specified layer and saves them as a PNG file.
-
-    Args:
-        model (torch.nn.Module): The trained model.
-        layer_name (str): The name of the layer whose weights are to be plotted.
-        epoch (int, optional): The epoch number for the filename.
-        batch_num (int, optional): The batch number for the filename.
-        model_name (str, optional): The name of the model part ('model_a' or 'model_b').
-
-    Returns:
-        None
-    """
-    layer = get_module_by_name(model, layer_name)
-    weights = layer.weight.data.cpu().numpy()
-
-    # Create directory if it doesn't exist
-    directory = f"weights_plots/{dataset_name}/epoch{epoch}/batch{batch_num}"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-    # Determine the number of filters
-    num_filters = weights.shape[0]
-
-    # Determine the grid size for subplots
-    grid_size = int(np.ceil(np.sqrt(num_filters)))
-
-    # Plot and save the weights
-    fig, axes = plt.subplots(grid_size, grid_size, figsize=(15, 15))
-    axes = axes.flatten()
-
-    for i in range(num_filters):
-        if len(weights.shape) == 4:  # Conv2d layer
-            filter_weights = weights[i, 0, :, :]
-        else:  # Linear layer
-            filter_weights = weights[i, :]
-
-        axes[i].imshow(filter_weights, cmap="viridis")
-        axes[i].axis("off")
-
-    plt.suptitle(f"Weights - {model_name} - Layer: {layer_name}")
-    filename = os.path.join(
-        directory, f"{model_name}_layer_{layer_name.replace('.', '_')}_weights.png"
-    )
-    plt.savefig(filename)
-    plt.close()
-
-
-def plot_gradcam(
-    model,
-    input_tensor,
-    target_layer_name,
-    target_class=None,
-    epoch=None,
-    batch_num=None,
-):
-    """
-    Generates a Grad-CAM visualization for the given input tensor and model.
-
-    Args:
-        model (torch.nn.Module): The trained model.
-        input_tensor (torch.Tensor): The input tensor for which the Grad-CAM is to be generated.
-        target_layer_name (str): The target layer name.
-        target_class (int, optional): The target class index. If None, uses the predicted class.
-        epoch (int, optional): The epoch number for the filename.
-        batch_num (int, optional): The batch number for the filename.
-
-    Returns:
-        Grad-CAM visualization as a numpy array.
-    """
-
-    def hook_fn(module, input, output):
-        model.activations = output
-        output.register_hook(lambda grad: setattr(model, "activations_grad", grad))
-
-    # Register hook to the target layer
-    target_layer = get_module_by_name(model, target_layer_name)
-    hook = target_layer.register_forward_hook(hook_fn)
-
     model.eval()
     device = next(model.parameters()).device
     input_tensor = input_tensor.to(device)
-    input_tensor.requires_grad_()
 
-    # Forward pass
-    output = model(input_tensor)
+    # Retrieve the target layer using get_layer_by_name
+    target_layer = get_layer_by_name(model, target_layer_name)
 
-    # If target_class is not specified, use the predicted class
-    if target_class is None:
-        target_class = output.argmax(dim=1).item()
+    # If target_classes is not provided, use the predicted class for each image
+    if target_classes is None:
+        with torch.no_grad():
+            outputs = model(input_tensor)  # Forward pass for the entire batch
+            target_classes = outputs.argmax(dim=1).tolist()  # Get target classes for all images
 
-    # Zero gradients
-    model.zero_grad()
+    # Create the Grad-CAM objects and process each sample in the batch
+    targets = [ClassifierOutputTarget(target_class) for target_class in target_classes]
+    
+    with GradCAM(model=model, target_layers=[target_layer]) as cam:
+        grayscale_cam = cam(input_tensor=input_tensor, targets=targets)
 
-    # Backward pass
-    target = output[0, target_class]
-    target.backward()
+    # Convert input tensor to numpy array for overlaying
+    input_image = input_tensor.detach().cpu().numpy()
+    
+    # Process each image in the batch
+    for batch_idx in range(input_image.shape[0]):
+        # Get the target class for the current image
+        target_class = target_classes[batch_idx]
 
-    # Get gradients and activations
-    gradients = model.activations_grad
-    activations = model.activations
+        # Define directory path for each batch, model, and class
+        class_directory = f"gradcam_plots/batch_{batch_num}/{model_name}/class_{target_class}"
+        os.makedirs(class_directory, exist_ok=True)
 
-    # Ensure gradients and activations are on the same device
-    gradients = gradients.to(device)
-    activations = activations.to(device)
+        # Process each channel in the image
+        for channel_idx in range(input_image.shape[1]):
+            channel_image = input_image[batch_idx, channel_idx]  # Shape: (H, W)
+            channel_image = (channel_image - channel_image.min()) / (channel_image.max() - channel_image.min())  # Normalize
 
-    # Check dimensions of gradients and activations
-    if gradients.dim() == 2:
-        gradients = gradients.unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
-    if activations.dim() == 2:
-        activations = activations.unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+            # Convert to RGB by repeating the grayscale image across three channels
+            channel_image_rgb = np.stack([channel_image] * 3, axis=-1)
 
-    # Calculate weights
-    weights = torch.mean(gradients, dim=[0, 2, 3])
+            # Get the CAM overlay for the current image
+            cam_image = show_cam_on_image(channel_image_rgb, grayscale_cam[batch_idx], use_rgb=True)
 
-    # Calculate Grad-CAM
-    grad_cam = torch.zeros(activations.shape[2:], device=device)
-    for i, w in enumerate(weights):
-        grad_cam += w * activations[0, i, :, :]
+            # Plot both the original channel and the Grad-CAM overlay side-by-side
+            fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+            
+            # Plot the original grayscale channel image
+            axs[0].imshow(channel_image, cmap='gray')
+            axs[0].set_title(f'Original Channel {channel_idx + 1}')
+            axs[0].axis('off')
+            
+            # Plot the Grad-CAM overlay
+            axs[1].imshow(cam_image)
+            axs[1].set_title(f'Grad-CAM Overlay for Channel {channel_idx + 1}')
+            axs[1].axis('off')
+            
+            # Save the figure
+            filename = os.path.join(class_directory, f"gradcam_overlay_class{target_class}_batch{batch_num}_image{batch_idx}_channel{channel_idx}.png")
+            plt.savefig(filename)
+            plt.close(fig)
+            print(f"Grad-CAM image for image {batch_idx} channel {channel_idx} saved to {filename}")
+import os
+import torch
+import numpy as np
+import matplotlib.pyplot as plt
+from pytorch_grad_cam import GradCAM
+from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
+from pytorch_grad_cam.utils.image import show_cam_on_image
 
-    grad_cam = torch.relu(grad_cam)
-    epsilon = 1e-8  # Small constant to avoid division by zero
-    grad_cam = grad_cam / torch.max(grad_cam + epsilon)
 
-    # Remove hook
-    hook.remove()
-
-    return grad_cam.detach().cpu().numpy()
-
-
-def plot_gradcams_for_layers(
-    model,
-    input_tensor,
-    layers,
-    epoch=None,
-    batch_num=None,
-    model_name="model",
-    dataset_name="dataset_0",
-):
+def get_layer_by_name(model, layer_name):
     """
-    Generates Grad-CAM visualizations for each layer and saves them as separate PNG files in a directory.
+    Retrieves a layer from the model based on a dot-separated path.
+    
+    Args:
+        model (torch.nn.Module): The model from which to retrieve the layer.
+        layer_name (str): Dot-separated path of the layer (e.g., "model_a.4.0").
+    
+    Returns:
+        torch.nn.Module: The layer corresponding to the provided path.
+    """
+    if isinstance(layer_name, list):
+        layer_name = layer_name[0]  # Use the first item if it's a list
+
+    parts = layer_name.split('.')  # Split the layer name by dots
+    layer = model
+    for part in parts:
+        layer = getattr(layer, part)  # Get the layer attribute
+    return layer
+
+
+def plot_gradcam_for_multichannel_input(model, input_tensor, target_layer_name, model_name, target_classes=None, batch_num=None):
+    """
+    Generates and saves Grad-CAM overlays for each channel in a multi-channel input tensor for the entire batch.
 
     Args:
         model (torch.nn.Module): The trained model.
-        input_tensor (torch.Tensor): The input tensor for which the Grad-CAM is to be generated.
-        layers (list of str): List of layer names for which to generate Grad-CAM.
-        epoch (int, optional): The epoch number for the filename.
+        input_tensor (torch.Tensor): The input tensor with shape [batch_size, C, H, W].
+        target_layer_name (str): Dot-separated path to the target layer for Grad-CAM.
+        model_name (str): Identifier for the model, e.g., "model_a" or "model_b".
+        target_classes (list, optional): A list of target class indices for each image in the batch.
         batch_num (int, optional): The batch number for the filename.
-        model_name (str, optional): The name of the model part ('model_a' or 'model_b').
 
     Returns:
         None
     """
-    # Create directory if it doesn't exist
-    directory = f"gradcam_plots/{dataset_name}/epoch{epoch}/batch{batch_num}"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    model.eval()
+    device = next(model.parameters()).device
+    input_tensor = input_tensor.to(device)
 
-    for i, layer in enumerate(layers):
-        grad_cam = plot_gradcam(
-            model,
-            input_tensor,
-            target_layer_name=layer,
-            epoch=epoch,
-            batch_num=batch_num,
-        )
-        plt.figure(figsize=(10, 10))
-        plt.imshow(grad_cam, cmap="jet")
-        plt.title(f"Grad-CAM - {model_name} - Layer: {layer}")
-        plt.axis("off")
-        filename = os.path.join(
-            directory, f"{model_name}_layer_{layer.replace('.', '_')}.png"
-        )
-        plt.savefig(filename)
-        plt.close()
+    # Retrieve the target layer using get_layer_by_name
+    target_layer = get_layer_by_name(model, target_layer_name)
 
-        # Plot and save the weights of the layer
-        plot_weights(
-            model,
-            layer,
-            epoch=epoch,
-            batch_num=batch_num,
-            model_name=model_name,
-            dataset_name=dataset_name,
-        )
-        plot_saliency_map(
-            model,
-            input_tensor,
-            epoch=epoch,
-            batch_num=batch_num,
-            model_name=model_name,
-            dataset_name=dataset_name,
-        )
+    # If target_classes is not provided, use the predicted class for each image
+    if target_classes is None:
+        with torch.no_grad():
+            outputs = model(input_tensor)  # Forward pass for the entire batch
+            target_classes = outputs.argmax(dim=1).tolist()  # Get target classes for all images
+
+    # Create the Grad-CAM objects and process each sample in the batch
+    targets = [ClassifierOutputTarget(target_class) for target_class in target_classes]
+    
+    with GradCAM(model=model, target_layers=[target_layer]) as cam:
+        grayscale_cam = cam(input_tensor=input_tensor, targets=targets)
+
+    # Convert input tensor to numpy array for overlaying
+    input_image = input_tensor.detach().cpu().numpy()
+    
+    # Process each image in the batch
+    for batch_idx in range(input_image.shape[0]):
+        # Get the target class for the current image
+        target_class = target_classes[batch_idx]
+
+        # Define directory path for each batch, model, and class
+        class_directory = f"gradcam_plots/batch_{batch_num}/{model_name}/class_{target_class}"
+        os.makedirs(class_directory, exist_ok=True)
+
+        # Process each channel in the image
+        for channel_idx in range(input_image.shape[1]):
+            channel_image = input_image[batch_idx, channel_idx]  # Shape: (H, W)
+            channel_image = (channel_image - channel_image.min()) / (channel_image.max() - channel_image.min())  # Normalize
+
+            # Convert to RGB by repeating the grayscale image across three channels
+            channel_image_rgb = np.stack([channel_image] * 3, axis=-1)
+
+            # Get the CAM overlay for the current image
+            cam_image = show_cam_on_image(channel_image_rgb, grayscale_cam[batch_idx], use_rgb=True)
+
+            # Plot both the original channel and the Grad-CAM overlay side-by-side
+            fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+            
+            # Plot the original grayscale channel image
+            axs[0].imshow(channel_image, cmap='gray')
+            axs[0].set_title(f'Original Channel {channel_idx + 1}')
+            axs[0].axis('off')
+            
+            # Plot the Grad-CAM overlay
+            axs[1].imshow(cam_image)
+            axs[1].set_title(f'Grad-CAM Overlay for Channel {channel_idx + 1}')
+            axs[1].axis('off')
+            
+            # Save the figure
+            filename = os.path.join(class_directory, f"gradcam_overlay_class{target_class}_batch{batch_num}_image{batch_idx}_channel{channel_idx}.png")
+            plt.savefig(filename)
+            plt.close(fig)
+

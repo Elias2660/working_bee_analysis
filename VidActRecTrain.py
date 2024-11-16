@@ -9,8 +9,6 @@ There is another problem is AveragePooling that may also make it impossible to u
 mode. If you encounter it, the solution is to just disable determinism with --not_deterministic
 """
 
-# Not using video reading library from torchvision.
-# It only works with old versions of ffmpeg.
 import argparse
 import csv
 import datetime
@@ -34,7 +32,6 @@ from utility.dataset_utility import getImageSize, getLabelSize
 from utility.eval_utility import ConfusionMatrix, WorstExamples
 from utility.model_utility import restoreModelAndState
 from utility.train_utility import updateWithScaler, updateWithoutScaler
-from utility.saliency_utils import plot_saliency_map, plot_gradcams_for_layers
 
 
 from models.alexnet import AlexLikeNet
@@ -43,8 +40,8 @@ from models.resnet import ResNet18, ResNet34
 from models.resnext import ResNext18, ResNext34, ResNext50
 from models.convnext import ConvNextExtraTiny, ConvNextTiny, ConvNextSmall, ConvNextBase
 
-# logging
 import logging
+from utility.saliency_utils import plot_gradcam_for_multichannel_input
 
 
 # Argument parser setup for the program.
@@ -209,6 +206,27 @@ parser.add_argument(
     type=str,
     help="Loss function to use during training.",
 )
+
+parser.add_argument(
+    "--gradcam_cnn_model_layer",
+    type=list,
+    required=False,
+    choices=[
+        "model_a.0.0",
+        "model_a.1.0",
+        "model_a.2.0",
+        "model_a.3.0",
+        "model_a.4.0",
+        "model_b.0.0",
+        "model_b.1.0",
+        "model_b.2.0",
+        "model_b.3.0",
+        "model_b.4.0",
+    ],
+    default=["model_a.4.0", "model_b.4.0"],
+    help="Model layers for gradcam plots.",
+)
+
 parser.add_argument(
     "--debug",
     required=False,
@@ -223,6 +241,7 @@ logging.basicConfig(
     level=logging.INFO,
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+
 if args.debug:
     logging.getLogger().setLevel(logging.DEBUG)
     logging.debug("Debugging enabled.")
@@ -499,7 +518,7 @@ elif "convnextb" == args.modeltype:
         optimizer, milestones=[2, 5, 12], gamma=0.2
     )
 
-logging.info(f"Model is {net} -> at line 504ish, starting to train")
+logging.info(f"Model is {net}, starting to train")
 
 # See if the model weights and optimizer state should be restored.
 if args.resume_from is not None:
@@ -538,8 +557,7 @@ try:
                 dateNow = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
                 if (batch_num % 1000) == 1:
                     logging.info("At tuple %d at %s" % (batch_num, dateNow))
-
-                logging.debug(f"Starting batch {batch_num}")
+                    
                 optimizer.zero_grad()
                 logging.debug(f"Zeroed gradients")
                 # For debugging purposes
@@ -607,71 +625,6 @@ try:
                                 input_images[i],
                                 metadata[i],
                             )
-
-            layers_a = [
-                "model_a.0.0",  # Conv2d
-                "model_a.1.0",  # Conv2d
-                "model_a.2.0",  # Conv2d
-                "model_a.3.0",  # Conv2d
-                "model_a.4.0",  # Conv2d
-            ]
-
-            # Define the layers for model_b
-            layers_b = [
-                "model_b.0.0",  # Conv2d
-                "model_b.1.0",  # Conv2d
-                "model_b.2.0",  # Conv2d
-                "model_b.3.0",  # Conv2d
-                "model_b.4.0",  # Conv2d
-            ]
-
-            net.eval()
-
-            logging.info(
-                f"Logging the data (including for gradcam footage) for epoch {epoch}"
-            )
-            last_batch = None
-            batch_count = 0
-            for batch_num, dl_tuple in enumerate(dataloader):
-                last_batch = dl_tuple  # Keep track of the last batch
-
-                # given problems with the gradcams, we'll be batching every 5th batch
-                if batch_count < 20:
-                    if last_batch is not None:
-                        dl_tuple = last_batch
-                        if 1 == in_frames:
-                            net_input = dl_tuple[0].unsqueeze(1).to(device=device)
-                        else:
-                            raw_input = []
-                            for i in range(in_frames):
-                                raw_input.append(
-                                    dl_tuple[i].unsqueeze(1).to(device=device)
-                                )
-                            net_input = torch.cat(raw_input, dim=1)
-
-                        plot_gradcams_for_layers(
-                            net,
-                            net_input[0].unsqueeze(0),
-                            layers_a,
-                            epoch,
-                            batch_num,
-                            "model_a",
-                            args.evaluate.split("/")[-1].split(".")[0],
-                        )
-                        plot_gradcams_for_layers(
-                            net,
-                            net_input[0].unsqueeze(0),
-                            layers_b,
-                            epoch,
-                            batch_num,
-                            "model_b",
-                            args.evaluate.split("/")[-1].split(".")[0],
-                        )
-                        batch_count += 1
-            logging.info(
-                f"Finished logging the data and plotting gradcam footage for epoch {epoch}, for {batch_count} number of batches"
-            )
-            
             logging.info(f"\n -- Starting to train the model for epoch {epoch} --")
             net.train()
 
@@ -686,7 +639,9 @@ try:
                 # Print out class statistics if this class was present in the data.
                 if 0 < sum(totals[cidx]):
                     precision, recall = totals.calculateRecallPrecision(cidx)
-                    logging.info(f"Class {cidx} precision={precision:.4f}, recall={recall:.4f}")
+                    logging.info(
+                        f"Class {cidx} precision={precision:.4f}, recall={recall:.4f}"
+                    )
             if worst_training is not None:
                 worst_training.save(epoch)
             # Validation set
@@ -810,6 +765,29 @@ if args.evaluate is not None:
                     v, m = torch.var_mean(net_input)
                     net_input = (net_input - m) / v
 
+                labels = dl_tuple[label_index]  # labels tensor of shape [batch_size]
+
+                # Convert to list of target classes for the batch
+                target_classes = (
+                    labels.tolist()
+                )  # Convert tensor to list for each image in the batch
+
+                if args.modeltype == "alexnet":
+                    model_names = ["model_a", "model_b"]
+
+                with torch.set_grad_enabled(True):
+                    for last_layer, model_name in zip(
+                        args.gradcam_cnn_model_layer, model_names
+                    ):
+                        plot_gradcam_for_multichannel_input(
+                            model=net,
+                            input_tensor=net_input,
+                            target_layer_name=[last_layer],
+                            model_name=model_name,
+                            target_classes=target_classes,
+                            batch_num=batch_num,
+                        )
+
                 # Visualization masks are not supported with all model types yet.
                 if args.modeltype in ["alexnet", "bennet", "resnet18", "resnet34"]:
                     out, mask = net.vis_forward(net_input)
@@ -832,7 +810,6 @@ if args.evaluate is not None:
                 loss = loss_fn(out, labels.to(device=device))
 
                 with torch.no_grad():
-                    logging.info("Starting to fill in confusion matrix")
                     # The postprocessesing should include Softmax or similar if that is required for
                     # the network. Outputs of most classification networks are considered
                     # probabilities (but only take that in a very loose sense of the word) so
