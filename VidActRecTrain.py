@@ -518,7 +518,7 @@ elif "convnextb" == args.modeltype:
         optimizer, milestones=[2, 5, 12], gamma=0.2
     )
 
-logging.info(f"Model is {net} -> at line 504ish, starting to train")
+logging.info(f"Model is {net}, starting to train")
 
 # See if the model weights and optimizer state should be restored.
 if args.resume_from is not None:
@@ -626,9 +626,6 @@ try:
                                 input_images[i],
                                 metadata[i],
                             )
-
-            net.eval()
-
             logging.info(f"\n -- Starting to train the model for epoch {epoch} --")
             net.train()
 
