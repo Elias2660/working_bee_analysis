@@ -221,7 +221,7 @@ parser.add_argument(
         "model_b.1.0",
         "model_b.2.0",
         "model_b.3.0",
-        "model_b.4.0",
+        "model_b.4.0"
     ],
     default=["model_a.4.0", "model_b.4.0"],
     help="Model layers for gradcam plots.",
