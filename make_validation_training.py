@@ -152,6 +152,25 @@ parser.add_argument(
     action="store_true",
     help="don't create the dataset_*.csv files",
 )
+parser.add_argument(
+    "--gradcam_cnn_model_layer",
+    type=list,
+    required=False,
+    choices=[
+        "model_a.0.0",
+        "model_a.1.0",
+        "model_a.2.0",
+        "model_a.3.0",
+        "model_a.4.0",
+        "model_b.0.0",
+        "model_b.1.0",
+        "model_b.2.0",
+        "model_b.3.0",
+        "model_b.4.0",
+    ],
+    default=["model_a.4.0", "model_b.4.0"],
+    help="Model layers for gradcam plots.",
+)
 
 args = parser.parse_args()
 
@@ -164,7 +183,7 @@ trainProgram = os.path.join(program_dir, "VidActRecTrain.py")  # ! FIX THIS TOO
 # command to run the evaluation and training program
 # trainCommand    = 'srun -G 1 python3 $TRAINPROGRAM --not_deterministic --epochs 10 --modeltype $MODEL --evaluate' # <eval-set> <a-set> <b-set> ...
 # <eval-set> <a-set> <b-set> ...
-trainCommand = f"python3 $TRAINPROGRAM --sample_frames {args.frames_per_sample} --not_deterministic --epochs {args.epochs} --modeltype $MODEL --label_offset $LABEL_OFFSET --evaluate"
+trainCommand = f"python3 $TRAINPROGRAM --sample_frames {args.frames_per_sample} --gradcam_cnn_model_layer {args.gradcam_cnn_model_layer} --not_deterministic --epochs {args.epochs} --modeltype $MODEL --label_offset $LABEL_OFFSET --evaluate"
 
 datacsvname = args.datacsv
 numOfSets = args.k
