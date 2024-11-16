@@ -154,7 +154,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--gradcam_cnn_model_layer",
-    type=list,
+    nargs="+",
     required=False,
     choices=[
         "model_a.0.0",
