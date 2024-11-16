@@ -198,7 +198,7 @@ crop_y_offset = args.crop_y_offset
 label_offset = args.label_offset
 training_only = args.training_only
 
-logging.info(f"datset is {datacsvname}")
+logging.info(f"dataset is {datacsvname}")
 
 # set the random number generator
 random.seed(seed)
