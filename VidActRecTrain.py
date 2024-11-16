@@ -557,8 +557,7 @@ try:
                 dateNow = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
                 if (batch_num % 1000) == 1:
                     logging.info("At tuple %d at %s" % (batch_num, dateNow))
-
-                logging.debug(f"Starting batch {batch_num}")
+                    
                 optimizer.zero_grad()
                 logging.debug(f"Zeroed gradients")
                 # For debugging purposes
@@ -811,7 +810,6 @@ if args.evaluate is not None:
                 loss = loss_fn(out, labels.to(device=device))
 
                 with torch.no_grad():
-                    logging.info("Starting to fill in confusion matrix")
                     # The postprocessesing should include Softmax or similar if that is required for
                     # the network. Outputs of most classification networks are considered
                     # probabilities (but only take that in a very loose sense of the word) so
