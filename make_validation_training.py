@@ -166,10 +166,17 @@ parser.add_argument(
         "model_b.1.0",
         "model_b.2.0",
         "model_b.3.0",
-        "model_b.4.0"
+        "model_b.4.0",
     ],
     default=["model_a.4.0", "model_b.4.0"],
     help="Model layers for gradcam plots.",
+)
+parser.add_argument(
+    "--time-to-run-training",
+    required=False,
+    help="Time limit to run the training jobs, default 28800 minutes (20 days)",
+    type=int,
+    default=28800,
 )
 
 args = parser.parse_args()
@@ -289,17 +296,12 @@ for dataset_num in range(numOfSets):
             "$LABEL_OFFSET", str(label_offset)
         )
         traincommand_local = (
-            traincommand_local + " " + baseName + "_" + str(dataset_num) + ".tar"
+            traincommand_local + " " + f"baseName_{str(dataset_num)}.tar"
         )
         for trainingSetNum in range(numOfSets):
             if int(trainingSetNum) != int(dataset_num):
                 traincommand_local = (
-                    traincommand_local
-                    + " "
-                    + baseName
-                    + "_"
-                    + str(trainingSetNum)
-                    + ".tar"
+                    traincommand_local + " " + f"{baseName}_{str(trainingSetNum)}.tar"
                 )
 
         trainFile.write(
@@ -307,13 +309,14 @@ for dataset_num in range(numOfSets):
         )  # write the training command to the training command
         trainFile.write("echo end-is: `date` \n \n")  # add end timestamp
         training_batch_file.write(
-            f"sbatch -G {args.gpus} -o "
-            + baseName
-            + "_trainlog_"
-            + str(dataset_num)
-            + ".log "
-            + train_job_filename
-            + " \n"
+            f"sbatch "
+            f"-G {args.gpus if args.gpus > 0 else 1}"
+            f" -c 8 "
+            f" -n 4 "
+            f" --time={args.time_to_run_training} "
+            f" -o {baseName}_trainlog_{str(dataset_num)}.log "
+            f"{train_job_filename} "
+            "\n"
         )  # add end timestamp to training file
 
     setNum = setNum + 1
