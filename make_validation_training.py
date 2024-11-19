@@ -296,7 +296,7 @@ for dataset_num in range(numOfSets):
             "$LABEL_OFFSET", str(label_offset)
         )
         traincommand_local = (
-            traincommand_local + " " + f"baseName_{str(dataset_num)}.tar"
+            traincommand_local + " " + f"{baseName}_{str(dataset_num)}.tar"
         )
         for trainingSetNum in range(numOfSets):
             if int(trainingSetNum) != int(dataset_num):
