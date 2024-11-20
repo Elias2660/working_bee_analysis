@@ -591,8 +591,6 @@ try:
                         loss_fn, net, net_input, labels, optimizer
                     )
 
-                # plot_gradcam(net, net_input[0].unsqueeze(0), target_class=labels[0].item(), batch_num=batch_num)
-
                 # Fill in the confusion matrix and worst examples.
                 with torch.no_grad():
                     logging.debug(f"Starting to fill in confusion matrix")
@@ -781,6 +779,7 @@ if args.evaluate is not None:
                     ):
                         plot_gradcam_for_multichannel_input(
                             model=net,
+                            dataset=args.evaluate.split("/")[-1].split(".")[0],
                             input_tensor=net_input,
                             target_layer_name=[last_layer],
                             model_name=model_name,
