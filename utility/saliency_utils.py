@@ -172,7 +172,7 @@ def plot_gradcam_for_multichannel_input(
             continue
         # Define directory path for each batch, model, and class
         class_directory = (
-            f"gradcam_plots/batch_{batch_num}/{model_name}/class_{target_class}"
+            f"gradcam_plots/{dataset}/batch_{batch_num}/{model_name}/class_{target_class}"
         )
         os.makedirs(class_directory, exist_ok=True)
         # Process each channel in the image
