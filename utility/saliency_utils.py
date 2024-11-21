@@ -32,7 +32,6 @@ def plot_saliency_map(
     model,
     input_tensor,
     target_class=None,
-    epoch=None,
     batch_num=None,
     model_name="model",
     dataset_name="dataset_0",
@@ -71,12 +70,9 @@ def plot_saliency_map(
     # Get gradients
     saliency = input_tensor.grad.data.abs().squeeze().cpu().numpy()
 
-    if saliency.ndim == 3:
-        saliency = saliency.mean(
-            axis=0
-        )  # use max, testing with mean for now to see if the map will change
+    saliency = saliency.mean(axis=(0, 1))
     # Create directory if it doesn't exist
-    directory = f"saliency_maps/{dataset_name}/epoch{epoch}/batch{batch_num}"
+    directory = f"saliency_maps/{dataset_name}/batch{batch_num}"
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -171,9 +167,7 @@ def plot_gradcam_for_multichannel_input(
         if class_count[target_class] > 100:
             continue
         # Define directory path for each batch, model, and class
-        class_directory = (
-            f"gradcam_plots/{dataset}/batch_{batch_num}/{model_name}/class_{target_class}"
-        )
+        class_directory = f"gradcam_plots/{dataset}/batch_{batch_num}/{model_name}/class_{target_class}"
         os.makedirs(class_directory, exist_ok=True)
         # Process each channel in the image
         for channel_idx in range(input_image.shape[1]):
@@ -217,6 +211,5 @@ def plot_gradcam_for_multichannel_input(
         target_class=target_classes[0],
         model_name=model_name,
         dataset_name=dataset,
-        epoch=0,
         batch_num=batch_num,
     )
