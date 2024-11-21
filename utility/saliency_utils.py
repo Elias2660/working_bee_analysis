@@ -114,7 +114,6 @@ def plot_gradcam_for_multichannel_input(
     target_layer_name,
     model_name,
     target_classes=None,
-    batch_num=None,
 ):
     """
     Generates and saves Grad-CAM overlays for each channel in a multi-channel input tensor for the entire batch.
@@ -156,7 +155,7 @@ def plot_gradcam_for_multichannel_input(
 
     # print 100 examples from each class
     class_count = {}
-
+    batch_num = 0
     # Process each image in the batch
     for batch_idx in range(input_image.shape[0]):
         # Get the target class for the current image
@@ -204,14 +203,16 @@ def plot_gradcam_for_multichannel_input(
             )
             plt.savefig(filename)
             plt.close(fig)
-    try:
-        plot_saliency_map(
-            model,
-            input_tensor,
-            target_class=target_classes[0],
-            model_name=model_name,
-            dataset_name=dataset,
-            batch_num=batch_num,
-        )
-    except Exception as e:
-        print(f"Failed to plot saliency map: {e}")
+        try:
+            plot_saliency_map(
+                model,
+                input_tensor,
+                target_class=target_classes[0],
+                model_name=model_name,
+                dataset_name=dataset,
+                batch_num=batch_num,
+            )
+        except Exception as e:
+            print(f"Failed to plot saliency map: {e}")
+        
+        batch_num += 1

@@ -785,7 +785,6 @@ if args.evaluate is not None:
                                 target_layer_name=[last_layer],
                                 model_name=model_name,
                                 target_classes=target_classes,
-                                batch_num=batch_num,
                             )
                         except Exception as e:
                             logging.error(
