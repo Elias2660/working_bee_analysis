@@ -204,12 +204,14 @@ def plot_gradcam_for_multichannel_input(
             )
             plt.savefig(filename)
             plt.close(fig)
-
-    plot_saliency_map(
-        model,
-        input_tensor,
-        target_class=target_classes[0],
-        model_name=model_name,
-        dataset_name=dataset,
-        batch_num=batch_num,
-    )
+    try:
+        plot_saliency_map(
+            model,
+            input_tensor,
+            target_class=target_classes[0],
+            model_name=model_name,
+            dataset_name=dataset,
+            batch_num=batch_num,
+        )
+    except Exception as e:
+        print(f"Failed to plot saliency map: {e}")

@@ -221,7 +221,7 @@ parser.add_argument(
         "model_b.1.0",
         "model_b.2.0",
         "model_b.3.0",
-        "model_b.4.0"
+        "model_b.4.0",
     ],
     default=["model_a.4.0", "model_b.4.0"],
     help="Model layers for gradcam plots.",
@@ -557,7 +557,7 @@ try:
                 dateNow = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
                 if (batch_num % 1000) == 1:
                     logging.info("At tuple %d at %s" % (batch_num, dateNow))
-                    
+
                 optimizer.zero_grad()
                 logging.debug(f"Zeroed gradients")
                 # For debugging purposes
@@ -777,16 +777,20 @@ if args.evaluate is not None:
                     for last_layer, model_name in zip(
                         args.gradcam_cnn_model_layer, model_names
                     ):
-                        plot_gradcam_for_multichannel_input(
-                            model=net,
-                            dataset=args.evaluate.split("/")[-1].split(".")[0],
-                            input_tensor=net_input,
-                            target_layer_name=[last_layer],
-                            model_name=model_name,
-                            target_classes=target_classes,
-                            batch_num=batch_num,
-                        )
-
+                        try:
+                            plot_gradcam_for_multichannel_input(
+                                model=net,
+                                dataset=args.evaluate.split("/")[-1].split(".")[0],
+                                input_tensor=net_input,
+                                target_layer_name=[last_layer],
+                                model_name=model_name,
+                                target_classes=target_classes,
+                                batch_num=batch_num,
+                            )
+                        except Exception as e:
+                            logging.error(
+                                f"Error plotting gradcam for layer {last_layer}: {e}"
+                            )
                 # Visualization masks are not supported with all model types yet.
                 if args.modeltype in ["alexnet", "bennet", "resnet18", "resnet34"]:
                     out, mask = net.vis_forward(net_input)
