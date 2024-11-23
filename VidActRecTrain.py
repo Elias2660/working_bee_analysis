@@ -623,28 +623,28 @@ try:
                                 input_images[i],
                                 metadata[i],
                             )
-            logging.info(f"\n -- Starting to train the model for epoch {epoch} --")
+            print(f"\n -- Starting to train the model for epoch {epoch} --")
             net.train()
 
-            logging.info(f"Finished epoch {epoch}, last loss was {loss:.4f}")
-            logging.info(f"Training confusion matrix:")
-            logging.info(totals)
-            logging.info(f"Accuracy: {totals.accuracy():.4f}")
-            logging.info("-- Finished Training epoch -- \n")
+            print(f"Finished epoch {epoch}, last loss was {loss:.4f}")
+            print(f"Confusion matrix:")
+            print(totals)
+            print(f"Accuracy: {totals.accuracy():.4f}")
+            print("-- Finished Training epoch -- \n")
 
-            logging.info("\n-- Class statistics --")
+            print("\n -- Class statistics -- ")
             for cidx in range(label_size):
                 # Print out class statistics if this class was present in the data.
                 if 0 < sum(totals[cidx]):
                     precision, recall = totals.calculateRecallPrecision(cidx)
-                    logging.info(
+                    print(
                         f"Class {cidx} precision={precision:.4f}, recall={recall:.4f}"
                     )
             if worst_training is not None:
                 worst_training.save(epoch)
             # Validation set
             if args.evaluate is not None:
-                logging.info("\nEvaluating model")
+                print("\nEvaluating model")
                 net.eval()
                 with torch.no_grad():
                     # Make a confusion matrix
@@ -689,18 +689,18 @@ try:
                                 )
                             totals.update(predictions=classes, labels=labels)
                     # Print evaluation information
-                    logging.info(f"\n\nEvaluation confusion matrix:")
-                    logging.info(totals)
-                    logging.info(f"Accuracy: {totals.accuracy():.4f}")
+                    print(f"\n\nEvaluating confusion matrix:")
+                    print(totals)
+                    print(f"Accuracy: {totals.accuracy():.4f}")
                     for cidx in range(label_size):
                         # Print out class statistics if this class was present in the data.
                         if 0 < sum(totals[cidx]):
                             precision, recall = totals.calculateRecallPrecision(cidx)
-                            logging.info(
+                            print(
                                 f"Class {cidx} precision={precision:.4f}, recall={recall:.4f}"
                             )
                 net.train()
-                logging.info(" -- Finished Evaluation -- \n\n")
+                print(" -- Finished Evaluation -- \n\n")
             # Adjust learning rate according to the learning rate schedule
             if lr_scheduler is not None:
                 lr_scheduler.step()
