@@ -749,7 +749,6 @@ if args.evaluate is not None:
             logging.info(f"Logging evaluation data to {args.outname.split('.')[0]}.log")
             logfile.write("video_path,frame,time,label,prediction\n")
             for batch_num, dl_tuple in enumerate(eval_dataloader):
-                logging.info(f"Starting batch {batch_num}")
                 # Decoding only the luminance channel means that the channel dimension has gone away here.
                 if 1 == in_frames:
                     net_input = dl_tuple[0].unsqueeze(1).to(device=device)

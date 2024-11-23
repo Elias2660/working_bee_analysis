@@ -69,8 +69,13 @@ def plot_saliency_map(
 
     # Get gradients
     saliency = input_tensor.grad.data.abs().squeeze().cpu().numpy()
+        # Ensure saliency is 2D
+    if saliency.ndim == 1:
+        saliency = saliency.reshape((input_tensor.shape[2], input_tensor.shape[3]))
 
-    saliency = saliency.mean(axis=(0, 1))
+    # Reduce saliency to 2D if it has more than 2 dimensions
+    if saliency.ndim > 2:
+        saliency = saliency.mean(axis=tuple(range(saliency.ndim - 2)))
     # Create directory if it doesn't exist
     directory = f"saliency_maps/{dataset_name}/batch{batch_num}"
     if not os.path.exists(directory):
