@@ -307,6 +307,9 @@ for dataset_num in range(numOfSets):
         trainFile.write(
             traincommand_local + "\n"
         )  # write the training command to the training command
+        trainFile.write(
+            "chmod -R 777 . >> /dev/null 2>&1 \n"
+        ) # change the permissions of the shell scripts to be executable.
         trainFile.write("echo end-is: `date` \n \n")  # add end timestamp
         training_batch_file.write(
             f"sbatch "
@@ -320,9 +323,7 @@ for dataset_num in range(numOfSets):
         )  # add end timestamp to training file
 
     setNum = setNum + 1
-train_job_filename.write(
-    "chmod -R 777 . >> /dev/null 2>&1 \n"
-) # change the permissions of the shell scripts to be executable.
+
 training_batch_file.write(
     "echo end-is: `date` \n \n"
 )  # add end timestamp to training file
