@@ -411,7 +411,7 @@ if "alexnet" == args.modeltype:
         out_classes=label_size,
         linear_size=512,
     ).to(device=device)
-    optimizer = torch.optim.SGD(net.parameters(), lr=10e-4)
+    optimizer = torch.optim.SGD(net.parameters(), lr=1e-5)
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
         optimizer, milestones=[3, 5, 7], gamma=0.2
     )
