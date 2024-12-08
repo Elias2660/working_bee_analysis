@@ -158,7 +158,7 @@ def plot_gradcam_for_multichannel_input(
     # Convert input tensor to numpy array for overlaying
     input_image = input_tensor.detach().cpu().numpy()
 
-    # print 100 examples from each class
+    # print 40 examples from each class
     class_count = {}
     batch_num = 0
     # Process each image in the batch
@@ -168,10 +168,10 @@ def plot_gradcam_for_multichannel_input(
         if target_class not in class_count:
             class_count[target_class] = 0
         class_count[target_class] += 1
-        if class_count[target_class] > 100:
+        if class_count[target_class] > 40:
             continue
-        # Define directory path for each batch, model, and class
-        class_directory = f"gradcam_plots/{dataset}/batch_{batch_num}/{model_name}/class_{target_class}"
+        # Define directory path for each batch, model and class
+        class_directory = f"gradcam_plots/{dataset}/{model_name}/class_{target_class}"
         os.makedirs(class_directory, exist_ok=True)
         # Process each channel in the image
         for channel_idx in range(input_image.shape[1]):
