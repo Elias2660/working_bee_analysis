@@ -116,7 +116,7 @@ def plot_gradcam_for_multichannel_input(
     model,
     dataset,
     input_tensor,
-    target_layer_name,
+    target_layer_name: str,
     model_name,
     target_classes=None,
 ):
@@ -204,7 +204,7 @@ def plot_gradcam_for_multichannel_input(
             # Save the figure
             filename = os.path.join(
                 class_directory,
-                f"gradcam_overlay_class{target_class}_batch{batch_num}_image{batch_idx}_channel{channel_idx}.png",
+                f"gradcam_overlay_class{target_class}_batch{batch_num}_image{batch_idx}_channel{channel_idx}_layer{target_layer_name}.png",
             )
             plt.savefig(filename)
             plt.close(fig)
