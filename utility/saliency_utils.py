@@ -171,7 +171,7 @@ def plot_gradcam_for_multichannel_input(
         if class_count[target_class] > 100:
             continue
         # Define directory path for each batch, model and class
-        class_directory = f"gradcam_plots/{dataset}/{model_name}/class_{target_class}"
+        class_directory = f"gradcam_plots/{dataset}/class_{target_class}/{model_name}"
         os.makedirs(class_directory, exist_ok=True)
         # Process each channel in the image
         for channel_idx in range(input_image.shape[1]):
