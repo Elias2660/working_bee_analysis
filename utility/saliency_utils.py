@@ -119,6 +119,7 @@ def plot_gradcam_for_multichannel_input(
     target_layer_name: str,
     model_name,
     target_classes=None,
+    number_of_classes=3,
 ):
     """
     Generates and saves Grad-CAM overlays for each channel in a multi-channel input tensor for the entire batch.
@@ -170,6 +171,17 @@ def plot_gradcam_for_multichannel_input(
         class_count[target_class] += 1
         if class_count[target_class] > 100:
             continue
+        
+        # make sure that we have 100 examples from each class, shortcuts
+        class_count_length = len(class_count)
+        if class_count_length == number_of_classes:
+            count  = 0
+            for target_class in class_count:
+                if class_count[target_class] == 100:
+                    count += 1
+            if count == number_of_classes:
+                return
+        
         # Define directory path for each batch, model and class
         class_directory = f"gradcam_plots/{dataset}/class_{target_class}/{model_name}"
         os.makedirs(class_directory, exist_ok=True)

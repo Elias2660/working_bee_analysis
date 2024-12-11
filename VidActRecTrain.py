@@ -777,6 +777,14 @@ if args.evaluate is not None:
                         args.gradcam_cnn_model_layer, model_names
                     ):
                         try:
+                            classes = 3
+                            unique_classes = set(target_classes)
+                            logging.info(f"Unique classes: {unique_classes}")
+                            if len(unique_classes) > 0:
+                                classes = len(unique_classes)
+
+                            logging.info(f"number of classes: {classes}")
+
                             plot_gradcam_for_multichannel_input(
                                 model=net,
                                 dataset=args.evaluate.split("/")[-1].split(".")[0],
@@ -784,6 +792,7 @@ if args.evaluate is not None:
                                 target_layer_name=[last_layer],
                                 model_name=model_name,
                                 target_classes=target_classes,
+                                number_of_classes=classes,
                             )
                         except Exception as e:
                             logging.error(
