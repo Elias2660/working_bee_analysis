@@ -177,9 +177,9 @@ def plot_gradcam_for_multichannel_input(
         if class_count_length == number_of_classes:
             count  = 0
             for target_class in class_count:
-                if class_count[target_class] == 100:
+                if class_count[target_class] >= 100:
                     count += 1
-            if count == number_of_classes:
+            if count >= number_of_classes:
                 return
         
         # Define directory path for each batch, model and class
