@@ -779,11 +779,10 @@ if args.evaluate is not None:
                         try:
                             classes = 3
                             unique_classes = set(target_classes)
-                            logging.info(f"Unique classes: {unique_classes}")
                             if len(unique_classes) > 0:
                                 classes = len(unique_classes)
-
-                            logging.info(f"number of classes: {classes}")
+                                
+                            logging.info("Plotting GradCAM for layer: " + last_layer[0])
 
                             plot_gradcam_for_multichannel_input(
                                 model=net,
