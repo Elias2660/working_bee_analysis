@@ -4,8 +4,8 @@ cvzone==1.6.1
 cycler==0.12.1
 ffmpeg-python==0.2.0
 filelock==3.17.0
-fonttools==4.55.6
-fsspec==2024.12.0
+fonttools==4.55.8
+fsspec==2025.2.0
 future==1.0.0
 grad-cam==1.5.4
 Jinja2==3.1.5
@@ -23,7 +23,7 @@ pillow==11.1.0
 pygame==2.6.1
 pyparsing==3.2.1
 python-dateutil==2.9.0.post0
-pytz==2024.2
+pytz==2025.1
 PyYAML==6.0.2
 scikit-learn==1.6.1
 scipy==1.15.1
@@ -31,8 +31,8 @@ setuptools==75.8.0
 six==1.17.0
 sympy==1.13.1
 threadpoolctl==3.5.0
-torch==2.5.1
-torchvision==0.20.1
+torch==2.6.0
+torchvision==0.21.0
 tqdm==4.67.1
 ttach==0.0.3
 typing_extensions==4.12.2
