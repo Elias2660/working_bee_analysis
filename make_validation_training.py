@@ -251,22 +251,19 @@ if not args.remove_dataset_sub:
 # foreach dataset, construct a csv of the files in that set
 baseNameFile = datacsvname.split(".csv")
 baseName = baseNameFile[0]
-setNum = 0
 currentDir = os.getcwd()
 
 # Write out the split csv files.
 if not args.remove_dataset_sub:
     for dataset_num in range(numOfSets):
         dataset_filename = baseName + "_" + str(dataset_num) + ".csv"
-        base_row = setNum * numFilesPerSet
         with open(dataset_filename, "w") as dsetFile:
             # write out the header row at the top of the set
             dsetFile.write("file, class, begin frame, end frame\n")
-            # write out all the rows for this set
-            for rowNum in range(base_row, base_row + numFilesPerSet):
-                dsetFile.write(",".join(all_csv_rows[rowNum]))
+            # write out all the rows for this set from the corresponding fold
+            for row in folds[dataset_num]:
+                dsetFile.write(",".join(row))
                 dsetFile.write("\n")
-        setNum = setNum + 1
 
 # Finish here if the only_split option was set.
 if args.only_split:
