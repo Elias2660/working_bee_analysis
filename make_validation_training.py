@@ -222,25 +222,24 @@ if not args.remove_dataset_sub:
         beginf_col = header.index("beginframe")
         endf_col = header.index("endframe")
 
-        loop_counter = 0
-        all_csv_rows = []
-        # Put all the rows in the csv file into a list
+        # Group rows by their class value
+        class_groups = {}
         for row in conf_reader:
-            all_csv_rows.append(row)
-        pass
+            cls = row[class_col]
+            class_groups.setdefault(cls, []).append(row)
 
-    # create a randomized permutation
-    random_rows = random.shuffle(all_csv_rows)
-    numRows = len(all_csv_rows)
+    # Initialize folds (one per dataset file)
+    folds = [[] for _ in range(numOfSets)]
 
-    # figure out the number of files to put into each dataset
-    numFilesPerSet = int(numRows / numOfSets)
-    extraFiles = numRows % numOfSets
+    # For each class, shuffle its rows and distribute them evenly across folds
+    for cls, rows in class_groups.items():
+        random.shuffle(rows)
+        for i, row in enumerate(rows):
+            fold_index = i % numOfSets
+            folds[fold_index].append(row)
 
-    # create test_N and train_N files for each of the k folds
-    logging.info(
-        f"Splitting {numRows} rows into {numFilesPerSet}/set with {extraFiles} extra"
-    )
+    numRows = sum(len(fold) for fold in folds)
+    logging.info(f"Splitting {numRows} rows into {numOfSets} datasets with balanced classes")
 
 # foreach dataset, construct a csv of the files in that set
 baseNameFile = datacsvname.split(".csv")
