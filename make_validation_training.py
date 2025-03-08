@@ -251,6 +251,7 @@ if not args.remove_dataset_sub:
 # foreach dataset, construct a csv of the files in that set
 baseNameFile = datacsvname.split(".csv")
 baseName = baseNameFile[0]
+setNum = 0
 currentDir = os.getcwd()
 
 # Write out the split csv files.
