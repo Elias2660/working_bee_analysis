@@ -178,6 +178,13 @@ parser.add_argument(
     type=int,
     default=28800,
 )
+parser.add_argument(
+    "--num-outputs",
+    required=False,
+    help="the number of outputs/classes that are required, used for the train command",
+    default=3,
+    type=int
+)
 
 args = parser.parse_args()
 
@@ -190,7 +197,7 @@ trainProgram = os.path.join(program_dir, "VidActRecTrain.py")  # ! FIX THIS TOO
 # command to run the evaluation and training program
 # trainCommand    = 'srun -G 1 python3 $TRAINPROGRAM --not_deterministic --epochs 10 --modeltype $MODEL --evaluate' # <eval-set> <a-set> <b-set> ...
 # <eval-set> <a-set> <b-set> ...
-trainCommand = f"python3 $TRAINPROGRAM --sample_frames {args.frames_per_sample} --gradcam_cnn_model_layer {' '.join(args.gradcam_cnn_model_layer)} --not_deterministic --epochs {args.epochs} --modeltype $MODEL --label_offset $LABEL_OFFSET --evaluate"
+trainCommand = f"python3 $TRAINPROGRAM --num_outputs {args.num_outputs} --sample_frames {args.frames_per_sample} --gradcam_cnn_model_layer {' '.join(args.gradcam_cnn_model_layer)} --not_deterministic --epochs {args.epochs} --modeltype $MODEL --label_offset $LABEL_OFFSET --evaluate"
 
 datacsvname = args.datacsv
 numOfSets = args.k
