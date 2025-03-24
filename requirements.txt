@@ -27,14 +27,14 @@ pytz==2025.1
 PyYAML==6.0.2
 scikit-learn==1.6.1
 scipy==1.15.2
-setuptools==76.0.0
+setuptools==77.0.3
 six==1.17.0
-sympy==1.13.1
+sympy==1.13.3
 threadpoolctl==3.6.0
 torch==2.6.0
 torchvision==0.21.0
 tqdm==4.67.1
 ttach==0.0.3
 typing_extensions==4.12.2
-tzdata==2025.1
+tzdata==2025.2
 webdataset==0.2.111
