@@ -4,7 +4,7 @@ cvzone==1.6.1
 cycler==0.12.1
 ffmpeg-python==0.2.0
 filelock==3.18.0
-fonttools==4.58.1
+fonttools==4.58.2
 fsspec==2025.5.1
 future==1.0.0
 grad-cam==1.5.5
@@ -18,7 +18,7 @@ networkx==3.4.2
 numpy==2.2.4
 opencv-python==4.11.0.86
 packaging==25.0
-pandas==2.2.3
+pandas==2.3.0
 pillow==11.2.1
 pygame==2.6.1
 pyparsing==3.2.3
@@ -31,8 +31,8 @@ setuptools==80.9.0
 six==1.17.0
 sympy==1.13.3
 threadpoolctl==3.6.0
-torch==2.7.0
-torchvision==0.22.0
+torch==2.7.1
+torchvision==0.22.1
 tqdm==4.67.1
 ttach==0.0.3
 typing_extensions==4.13.2
